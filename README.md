@@ -1,4 +1,13 @@
 phppr.net
-===========
+==============
 
-Repositório para o desenvolvimento do site do PHP PR
+Repositório para o desenolvimento do site da comunidade PHP PR.
+
+Baseado no wordpress.
+
+
+Contribuições
+=============
+
+Leia atentamente o arquivo CONTRIBUTING.md
+
