@@ -26,4 +26,4 @@ o git tem um tutorial bem bacana que servirá de guia (https://help.github.com/a
 
 
 
-Sintam-se a vontade para sugerir melhorias ou mesmo criticar algo que foi feita de forma ruim.
+Sintam-se a vontade para sugerir melhorias ou mesmo criticar algo que foi feito de forma ruim.
