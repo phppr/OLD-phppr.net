@@ -8,7 +8,7 @@ Repositório para o desenolvimento do tema Wordpress para o site da comunidade P
 
 Para contribuir com o desenvolvimento do site existem duas formas.
 
-* [Criando Issue](https://github.com/php-pr/phppr.net/issues)
+* Criando [Issue](https://github.com/php-pr/phppr.net/issues)
 * Pull Request
 
 ### Issue ###
