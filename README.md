@@ -1,6 +1,6 @@
 # [PHPPR.net](http://phppr.net) #
 
-[![alt text](phppr.png "PHPPR.net")](http://phppr.net)
+[![alt text](assets/images/phppr.png "PHPPR.net")](http://phppr.net)
 
 Repositório para o desenolvimento do tema Wordpress para o site da comunidade PHP PR.
 
