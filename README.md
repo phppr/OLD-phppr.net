@@ -1,4 +1,6 @@
-# PHPPR.net #
+# [PHPPR.net](http://phppr.net) #
+
+[![alt text](phppr.png "PHPPR.net")](http://phppr.net)
 
 Repositório para o desenolvimento do tema Wordpress para o site da comunidade PHP PR.
 
@@ -6,7 +8,7 @@ Repositório para o desenolvimento do tema Wordpress para o site da comunidade P
 
 Para contribuir com o desenvolvimento do site existem duas formas.
 
-* Criando Issue (https://github.com/php-pr/phppr.net/issues)
+* [Criando Issue](https://github.com/php-pr/phppr.net/issues)
 * Pull Request
 
 ### Issue ###
