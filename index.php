@@ -26,12 +26,67 @@
     <!-- #wrapper -->
     <div id="wrapper">
 
-        <div class="container text-center">
-            <h1>PHP PR</h1>
+        <div class="container">
+
+            <!-- #header -->
+            <header id="header">
+                <?php if ( is_home() ) : ?>
+                    <h1 class="site-title"><a href="<?php echo home_url(); ?>" title="<?php echo esc_attr( get_bloginfo( 'name', 'display' ) ); ?>" rel="home"><?php bloginfo( 'name' ); ?></a></h1>
+                    <h2 class="site-description"><?php bloginfo( 'description' ); ?></h2>
+                <?php else : ?>
+                    <div class="site-title h1"><a href="<?php echo home_url(); ?>" title="<?php echo esc_attr( get_bloginfo( 'name', 'display' ) ); ?>" rel="home"><?php bloginfo( 'name' ); ?></a></div>
+                    <div class="site-description h2"><?php bloginfo( 'description' ); ?></div>
+                <?php endif ?>
+            </header>
+            <!-- /#header -->
+
+            <!-- /#main-navigation -->
+            <nav id="main-navigation" class="navbar navbar-default" role="navigation">
+
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-navigation">
+
+                    <span class="sr-only"><?php _e( 'Toggle navigation', 'odin' ); ?></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+
+                </div>
+
+                <div class="collapse navbar-collapse navbar-main-navigation">
+
+                    <?php
+                        wp_nav_menu(
+                            array(
+                                'theme_location' => 'main-menu',
+                                'depth'          => 2,
+                                'container'      => false,
+                                'menu_class'     => 'nav navbar-nav',
+                                'fallback_cb'    => 'Odin_Bootstrap_Nav_Walker::fallback',
+                                'walker'         => new Odin_Bootstrap_Nav_Walker()
+                            )
+                        );
+                    ?>
+
+                    <form method="get" class="navbar-form navbar-right" action="<?php echo esc_url( home_url( '/' ) ); ?>" role="search">
+                        <label for="navbar-search" class="sr-only"><?php _e( 'Search:', 'odin' ); ?></label>
+                        <div class="form-group">
+                            <input type="text" class="form-control" name="s" id="navbar-search" />
+                        </div>
+                        <button type="submit" class="btn btn-default"><?php _e( 'Search', 'odin' ); ?></button>
+                    </form>
+
+                </div>
+
+            </nav>
+            <!-- /#main-navigation -->
+
         </div>
 
     </div>
     <!-- /#wrapper -->
 
+<?php wp_footer(); ?>
 </body>
 </html>
