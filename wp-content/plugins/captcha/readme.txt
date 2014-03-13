@@ -3,8 +3,8 @@ Contributors: bestwebsoft
 Donate link: https://www.2checkout.com/checkout/purchase?sid=1430388&quantity=10&product_id=13
 Tags: captcha, match captcha, text captcha, spam, antispam, login, registration, comment, lost password, capcha, catcha, captha
 Requires at least: 3.0
-Tested up to: 3.8-RC1
-Stable tag: 3.9.2
+Tested up to: 3.8.1
+Stable tag: 3.9.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,6 +17,8 @@ This captcha can be used for login, registration, password recovery, comments fo
 There is also a premium version of the plugin, allowing compatibility with BuddyPress (Registration form, Comments form, "Create a Group" form) and Contact Form 7.
 
 http://www.youtube.com/watch?v=SBZhBkO6Szs
+
+<a href="http://www.youtube.com/watch?v=svcdSfwlb2c" target="_blank">Video instruction on Installation</a>
 
 <a href="http://wordpress.org/plugins/captcha/faq/" target="_blank">FAQ</a>
 
@@ -92,7 +94,11 @@ We can fix some things for free for the users who provide translation of our plu
 
 1. Upload the `captcha` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin via the 'Plugins' menu in WordPress.
-3. Plugin settings are located in 'Settings', 'Captcha'.
+3. Plugin settings are located in "BWS Plugins" > "Captcha".
+
+<a href="https://docs.google.com/document/d/1DN2yYCvDyK2LqmbWw6xmUNLbb0awOVDZ_dOgIXod-Jw/edit" target="_blank">View a Step-by-step Instruction on Captcha Installation</a>.
+
+http://www.youtube.com/watch?v=svcdSfwlb2c
 
 == Frequently Asked Questions ==
 
@@ -154,6 +160,14 @@ or
 `<?php if( function_exists( 'cptch_check_custom_form' ) && cptch_check_custom_form() !== true ) echo "Please complete the CAPTCHA." ?>`
 You could add this line to the variable and display this variable in the required place instead of `echo "Please complete the CAPTCHA."`. If there is a variable (responsible for the errors output) in the check function, this phrase can be added to this variable. If the function returns 'true', it means that you have entered captcha properly. In all other cases the function will return 'false'.
 
+= I have some problems with the plugin's work. What Information should I provide to receive proper support? =
+
+Please make sure that the problem hasn't been discussed yet on our forum (<a href="http://support.bestwebsoft.com" target="_blank">http://support.bestwebsoft.com</a>). If no, please provide the following data along with your problem's description:
+1. the link to the page where the problem occurs
+2. the name of the plugin and its version. If you are using a pro version - your order number.
+3. the version of your WordPress installation
+4. copy and paste into the message your system status report. Please read more here: <a href="https://docs.google.com/document/d/1Wi2X8RdRGXk9kMszQy1xItJrpN0ncXgioH935MaBKtc/edit" target="_blank">System_Status.pdf</a>
+
 == Screenshots ==
 
 1. Captcha Settings page.
@@ -161,9 +175,31 @@ You could add this line to the variable and display this variable in the require
 3. Registration form with Captcha.
 4. Lost password form with Captcha.
 5. Login form with Captcha.
-5. Contact form with Captcha.
+6. Contact form with Captcha.
 
 == Changelog ==
+
+= V3.9.8 - 10.03.2014 =
+* Bugfix : We fixed error related to custom plugins folder.
+
+= V3.9.7 - 10.03.2014 =
+* Budfix : Plugin optimization is done.
+* Update : The French language file is updated.
+
+= V3.9.6 - 12.02.2014 =
+* Bugfix : Comflict with plugin Limit Login Attempts is fixed (a false login when logging out of the WP backend).
+* Bugfix : We fixed displaying captcha in contact form.
+
+= V3.9.5 - 03.02.2014 =
+* Update : We updated all functionality for wordpress 3.8.1.
+* Update : Changed filter for captcha in the login form.
+
+= V3.9.4 - 16.01.2014 =
+* Update : BWS plugins section is updated.
+
+= V3.9.3 - 25.12.2013 =
+* Update : The French language file is updated.
+* Update : We updated all functionality for wordpress 3.8.
 
 = V3.9.2 - 10.12.2013 =
 * NEW : A notice when changing settings on the plugin's settings page was added. 
@@ -422,6 +458,24 @@ You could add this line to the variable and display this variable in the require
 * Select functionality of mathematical actions and level of their difficulty are implemented.
 
 == Upgrade Notice ==
+
+= V3.9.8 =
+We fixed error related to custom plugins folder.
+
+= V3.9.7 =
+Plugin optimization is done. The French language file is updated.
+
+= V3.9.6 =
+Comflict with plugin Limit Login Attempts is fixed (a false login when logging out of the WP backend). We fixed displaying captcha in contact form.
+
+= V3.9.5 =
+We updated all functionality for wordpress 3.8.1. Changed filter for captcha in the login form.
+
+= V3.9.4 =
+BWS plugins section is updated.
+
+= V3.9.3 =
+The French language file is updated. We updated all functionality for wordpress 3.8.
 
 = V3.9.2 =
 A notice when changing settings on the plugin's settings page was added. We updated all functionality for wordpress 3.8-RC1.
