@@ -40,6 +40,8 @@
 
 		</script>
 		<!-- Google Analytics -->
+		
+		<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
 	
 	<?php wp_head(); ?>
 </head>
