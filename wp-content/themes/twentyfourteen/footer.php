@@ -24,5 +24,17 @@
 	</div><!-- #page -->
 
 	<?php wp_footer(); ?>
+	
+	<script>
+			$("a[rel=imagem]").fancybox({
+					'width'				: '70%',
+					'autoScale'			: false,
+					'transitionIn'		: 'elastic',
+					'transitionOut'		: 'elastic',
+					'showNavArrows' :    false,
+					'showCloseButton' :    true
+			});
+		</script>
+	
 </body>
 </html>

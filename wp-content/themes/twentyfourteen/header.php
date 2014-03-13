@@ -42,6 +42,11 @@
 		<!-- Google Analytics -->
 		
 		<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+		<script type="text/javascript" src="<?php echo get_template_directory_uri(); ?>/js/jquery-1.8.3-min.js" ></script> 
+		<script type="text/javascript" src="<?php echo get_template_directory_uri(); ?>/js/jquery.fancybox-1.3.4/fancybox/jquery.mousewheel-3.0.4.pack.js" ></script>
+        <script type="text/javascript" src="<?php echo get_template_directory_uri(); ?>/js/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+        <link href="<?php echo get_template_directory_uri(); ?>/js/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.css" rel='stylesheet' type='text/css'>
+		
 	<?php wp_head(); ?>
 		
 </head>
