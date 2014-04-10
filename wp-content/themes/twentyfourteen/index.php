@@ -14,6 +14,13 @@
  * @since Twenty Fourteen 1.0
  */
 
+if ( false !== strpos($_SERVER['REQUEST_URI'], 'composer-para-iniciantes') ) {
+	ob_start();
+	header( 'HTTP/1.1 301 Moved Permanently'); 
+	header( 'Location: http://tableless.com.br/composer-para-iniciantes/' ); 
+	ob_flush();
+}
+
 get_header(); ?>
 
 <div id="main-content" class="main-content">
