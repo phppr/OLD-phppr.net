@@ -30,7 +30,7 @@
 
 		<div class="entry-meta">
 			<?php
-				if ( 'post' == get_post_type() )
+				if ( 'post' == get_post_type() );
 					twentyfourteen_posted_on();
 
 				if ( ! post_password_required() && ( comments_open() || get_comments_number() ) ) :
@@ -44,7 +44,7 @@
 		</div><!-- .entry-meta -->
 	</header><!-- .entry-header -->
 
-	<?php if ( is_search() ) : ?>
+	<?php if ( is_search() || is_home() ) : ?>
 	<div class="entry-summary">
 		<?php the_excerpt(); ?>
 	</div><!-- .entry-summary -->
