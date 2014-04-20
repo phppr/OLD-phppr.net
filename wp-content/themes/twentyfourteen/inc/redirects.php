@@ -5,7 +5,7 @@ $url = $_SERVER['REQUEST_URI'];
 $base = get_bloginfo('url');
 
 $blacklist = array(
-    '/back-to-basics/' => $base . '/back-to-the-basics'
+    '/category/back-to-basics/' => $base . '/back-to-the-basics'
 );
 
 
