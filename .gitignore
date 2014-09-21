@@ -9,6 +9,7 @@ wp-content/advanced-cache.php
 wp-content/wp-cache-config.php
 sitemap.xml
 *.log
+error_log
 wp-content/cache/
 wp-content/backups/
 sitemap.xml
