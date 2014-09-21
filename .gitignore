@@ -7,6 +7,7 @@ wp-content/upgrade/
 wp-content/backup-db/
 wp-content/advanced-cache.php
 wp-content/wp-cache-config.php
+wp-content/plugins/acf-gallery
 sitemap.xml
 *.log
 error_log
