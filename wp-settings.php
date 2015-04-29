@@ -119,6 +119,7 @@ require( ABSPATH . WPINC . '/theme.php' );
 require( ABSPATH . WPINC . '/class-wp-theme.php' );
 require( ABSPATH . WPINC . '/template.php' );
 require( ABSPATH . WPINC . '/user.php' );
+require( ABSPATH . WPINC . '/session.php' );
 require( ABSPATH . WPINC . '/meta.php' );
 require( ABSPATH . WPINC . '/general-template.php' );
 require( ABSPATH . WPINC . '/link-template.php' );
@@ -164,6 +165,8 @@ if ( is_multisite() ) {
 // Define must-use plugin directory constants, which may be overridden in the sunrise.php drop-in.
 wp_plugin_directory_constants();
 
+$GLOBALS['wp_plugin_paths'] = array();
+
 // Load must-use plugins.
 foreach ( wp_get_mu_plugins() as $mu_plugin ) {
 	include_once( $mu_plugin );
@@ -173,6 +176,7 @@ unset( $mu_plugin );
 // Load network activated plugins.
 if ( is_multisite() ) {
 	foreach( wp_get_active_network_plugins() as $network_plugin ) {
+		wp_register_plugin_realpath( $network_plugin );
 		include_once( $network_plugin );
 	}
 	unset( $network_plugin );
@@ -188,7 +192,7 @@ do_action( 'muplugins_loaded' );
 if ( is_multisite() )
 	ms_cookie_constants(  );
 
-// Define constants after multisite is loaded. Cookie-related constants may be overridden in ms_network_cookies().
+// Define constants after multisite is loaded.
 wp_cookie_constants();
 
 // Define and enforce our SSL constants
@@ -206,8 +210,10 @@ create_initial_post_types();
 register_theme_directory( get_theme_root() );
 
 // Load active plugins.
-foreach ( wp_get_active_and_valid_plugins() as $plugin )
+foreach ( wp_get_active_and_valid_plugins() as $plugin ) {
+	wp_register_plugin_realpath( $plugin );
 	include_once( $plugin );
+}
 unset( $plugin );
 
 // Load pluggable functions.
@@ -248,7 +254,7 @@ do_action( 'sanitize_comment_cookies' );
  * @global object $wp_the_query
  * @since 2.0.0
  */
-$wp_the_query = new WP_Query();
+$GLOBALS['wp_the_query'] = new WP_Query();
 
 /**
  * Holds the reference to @see $wp_the_query
@@ -256,7 +262,7 @@ $wp_the_query = new WP_Query();
  * @global object $wp_query
  * @since 1.5.0
  */
-$wp_query = $wp_the_query;
+$GLOBALS['wp_query'] = $GLOBALS['wp_the_query'];
 
 /**
  * Holds the WordPress Rewrite object for creating pretty URLs
@@ -270,7 +276,7 @@ $GLOBALS['wp_rewrite'] = new WP_Rewrite();
  * @global object $wp
  * @since 2.0.0
  */
-$wp = new WP();
+$GLOBALS['wp'] = new WP();
 
 /**
  * WordPress Widget Factory Object
@@ -331,7 +337,7 @@ if ( ! defined( 'WP_INSTALLING' ) || 'wp-activate.php' === $pagenow ) {
 do_action( 'after_setup_theme' );
 
 // Set up current user.
-$wp->init();
+$GLOBALS['wp']->init();
 
 /**
  * Fires after WordPress has finished loading but before any headers are sent.
@@ -361,7 +367,7 @@ if ( is_multisite() ) {
  * AJAX requests should use wp-admin/admin-ajax.php. admin-ajax.php can handle requests for
  * users not logged in.
  *
- * @link http://codex.wordpress.org/AJAX_in_Plugins
+ * @link https://codex.wordpress.org/AJAX_in_Plugins
  *
  * @since 3.0.0
  */
