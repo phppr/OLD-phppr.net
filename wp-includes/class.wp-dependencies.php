@@ -18,7 +18,7 @@ class WP_Dependencies {
 	 * @since 2.6.8
 	 * @var array
 	 */
-	public $registered = array();
+	var $registered = array();
 
 	/**
 	 * An array of queued _WP_Dependency handle objects.
@@ -27,7 +27,7 @@ class WP_Dependencies {
 	 * @since 2.6.8
 	 * @var array
 	 */
-	public $queue = array();
+	var $queue = array();
 
 	/**
 	 * An array of _WP_Dependency handle objects to queue.
@@ -36,7 +36,7 @@ class WP_Dependencies {
 	 * @since 2.6.0
 	 * @var array
 	 */
-	public $to_do = array();
+	var $to_do = array();
 
 	/**
 	 * An array of _WP_Dependency handle objects already queued.
@@ -45,7 +45,7 @@ class WP_Dependencies {
 	 * @since 2.6.0
 	 * @var array
 	 */
-	public $done = array();
+	var $done = array();
 
 	/**
 	 * An array of additional arguments passed when a handle is registered.
@@ -56,7 +56,7 @@ class WP_Dependencies {
 	 * @since 2.6.0
 	 * @var array
 	 */
-	public $args = array();
+	var $args = array();
 
 	/**
 	 * An array of handle groups to enqueue.
@@ -65,7 +65,7 @@ class WP_Dependencies {
 	 * @since 2.8.0
 	 * @var array
 	 */
-	public $groups = array();
+	var $groups = array();
 
 	/**
 	 * A handle group to enqueue.
@@ -74,7 +74,7 @@ class WP_Dependencies {
 	 * @since 2.8.0
 	 * @var int
 	 */
-	public $group = 0;
+	var $group = 0;
 
 	/**
 	 * Process the items and dependencies.
@@ -89,7 +89,7 @@ class WP_Dependencies {
 	 * @return array Handles of items that have been processed.
 	 */
 	public function do_items( $handles = false, $group = false ) {
-		/*
+		/**
 		 * If nothing is passed, print the queue. If a string is passed,
 		 * print that item. If an array is passed, print those items.
 		 */
@@ -99,7 +99,7 @@ class WP_Dependencies {
 		foreach( $this->to_do as $key => $handle ) {
 			if ( !in_array($handle, $this->done, true) && isset($this->registered[$handle]) ) {
 
-				/*
+				/**
 				 * A single item may alias a set of items, by having dependencies,
 				 * but no source. Queuing the item queues the dependencies.
 				 *
@@ -107,13 +107,13 @@ class WP_Dependencies {
 				 *   <code>add( 'scriptaculous', false, array( 'scriptaculous-dragdrop', 'scriptaculous-slider', 'scriptaculous-controls' ) );</code>
 				 *
 				 * The src property is false.
-				 */
+				**/
 				if ( ! $this->registered[$handle]->src ) {
 					$this->done[] = $handle;
 					continue;
 				}
 
-				/*
+				/**
 				 * Attempt to process the item. If successful,
 				 * add the handle to the done array.
 				 *
@@ -325,31 +325,6 @@ class WP_Dependencies {
 	}
 
 	/**
-	 * Recursively search the passed dependency tree for $handle
-	 *
-	 * @since 4.0.0
-	 *
-	 * @param array  $queue  An array of queued _WP_Dependency handle objects.
-	 * @param string $handle Name of the item. Should be unique.
-	 * @return boolean Whether the handle is found after recursively searching the dependency tree.
-	 */
-	protected function recurse_deps( $queue, $handle ) {
-		foreach ( $queue as $queued ) {
-			if ( ! isset( $this->registered[ $queued ] ) ) {
-				continue;
-			}
-
-			if ( in_array( $handle, $this->registered[ $queued ]->deps ) ) {
-				return true;
-			} elseif ( $this->recurse_deps( $this->registered[ $queued ]->deps, $handle ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Query list for an item.
 	 *
 	 * @access public
@@ -369,10 +344,7 @@ class WP_Dependencies {
 
 			case 'enqueued' :
 			case 'queue' :
-				if ( in_array( $handle, $this->queue ) ) {
-					return true;
-				}
-				return $this->recurse_deps( $this->queue, $handle );
+				return in_array( $handle, $this->queue );
 
 			case 'to_do' :
 			case 'to_print': // back compat
@@ -429,7 +401,7 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var null
 	 */
-	public $handle;
+	var $handle;
 
 	/**
 	 * The handle source.
@@ -438,7 +410,7 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var null
 	 */
-	public $src;
+	var $src;
 
 	/**
 	 * An array of handle dependencies.
@@ -447,7 +419,7 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var array
 	 */
-	public $deps = array();
+	var $deps = array();
 
 	/**
 	 * The handle version.
@@ -458,7 +430,7 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var bool|string
 	 */
-	public $ver = false;
+	var $ver = false;
 
 	/**
 	 * Additional arguments for the handle.
@@ -467,7 +439,7 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var null
 	 */
-	public $args = null;  // Custom property, such as $in_footer or $media.
+	var $args = null;  // Custom property, such as $in_footer or $media.
 
 	/**
 	 * Extra data to supply to the handle.
@@ -476,14 +448,14 @@ class _WP_Dependency {
 	 * @since 2.6.0
 	 * @var array
 	 */
-	public $extra = array();
+	var $extra = array();
 
 	/**
 	 * Setup dependencies.
 	 *
 	 * @since 2.6.0
 	 */
-	public function __construct() {
+	function __construct() {
 		@list( $this->handle, $this->src, $this->deps, $this->ver, $this->args ) = func_get_args();
 		if ( ! is_array($this->deps) )
 			$this->deps = array();
@@ -499,7 +471,7 @@ class _WP_Dependency {
 	 * @param mixed  $data The data value to add.
 	 * @return bool False if not scalar, true otherwise.
 	 */
-	public function add_data( $name, $data ) {
+	function add_data( $name, $data ) {
 		if ( !is_scalar($name) )
 			return false;
 		$this->extra[$name] = $data;

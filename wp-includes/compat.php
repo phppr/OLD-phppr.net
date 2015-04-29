@@ -13,41 +13,23 @@ if ( !function_exists('_') ) {
 	}
 }
 
-if ( ! function_exists( 'mb_substr' ) ) :
-	function mb_substr( $str, $start, $length = null, $encoding = null ) {
-		return _mb_substr( $str, $start, $length, $encoding );
+if ( !function_exists('mb_substr') ):
+	function mb_substr( $str, $start, $length=null, $encoding=null ) {
+		return _mb_substr($str, $start, $length, $encoding);
 	}
 endif;
 
-function _mb_substr( $str, $start, $length = null, $encoding = null ) {
-	// The solution below works only for UTF-8,
-	// so in case of a different charset just use built-in substr()
+function _mb_substr( $str, $start, $length=null, $encoding=null ) {
+	// the solution below, works only for utf-8, so in case of a different
+	// charset, just use built-in substr
 	$charset = get_option( 'blog_charset' );
-	if ( ! in_array( $charset, array( 'utf8', 'utf-8', 'UTF8', 'UTF-8' ) ) ) {
-		return is_null( $length ) ? substr( $str, $start ) : substr( $str, $start, $length );
+	if ( !in_array( $charset, array('utf8', 'utf-8', 'UTF8', 'UTF-8') ) ) {
+		return is_null( $length )? substr( $str, $start ) : substr( $str, $start, $length);
 	}
-	// Use the regex unicode support to separate the UTF-8 characters into an array
+	// use the regex unicode support to separate the UTF-8 characters into an array
 	preg_match_all( '/./us', $str, $match );
-	$chars = is_null( $length ) ? array_slice( $match[0], $start ) : array_slice( $match[0], $start, $length );
+	$chars = is_null( $length )? array_slice( $match[0], $start ) : array_slice( $match[0], $start, $length );
 	return implode( '', $chars );
-}
-
-if ( ! function_exists( 'mb_strlen' ) ) :
-	function mb_strlen( $str, $encoding = null ) {
-		return _mb_strlen( $str, $encoding );
-	}
-endif;
-
-function _mb_strlen( $str, $encoding = null ) {
-	// The solution below works only for UTF-8,
-	// so in case of a different charset just use built-in strlen()
-	$charset = get_option( 'blog_charset' );
-	if ( ! in_array( $charset, array( 'utf8', 'utf-8', 'UTF8', 'UTF-8' ) ) ) {
-		return strlen( $str );
-	}
-	// Use the regex unicode support to separate the UTF-8 characters into an array
-	preg_match_all( '/./us', $str, $match );
-	return count( $match[0] );
 }
 
 if ( !function_exists('hash_hmac') ):
@@ -83,7 +65,7 @@ if ( !function_exists('json_encode') ) {
 	function json_encode( $string ) {
 		global $wp_json;
 
-		if ( ! ( $wp_json instanceof Services_JSON ) ) {
+		if ( !is_a($wp_json, 'Services_JSON') ) {
 			require_once( ABSPATH . WPINC . '/class-json.php' );
 			$wp_json = new Services_JSON();
 		}
@@ -96,7 +78,7 @@ if ( !function_exists('json_decode') ) {
 	function json_decode( $string, $assoc_array = false ) {
 		global $wp_json;
 
-		if ( ! ($wp_json instanceof Services_JSON ) ) {
+		if ( !is_a($wp_json, 'Services_JSON') ) {
 			require_once( ABSPATH . WPINC . '/class-json.php' );
 			$wp_json = new Services_JSON();
 		}
@@ -111,39 +93,4 @@ if ( !function_exists('json_decode') ) {
 			$data = get_object_vars($data);
 		return is_array($data) ? array_map(__FUNCTION__, $data) : $data;
 	}
-}
-
-if ( ! function_exists( 'hash_equals' ) ) :
-/**
- * Compare two strings in constant time.
- *
- * This function was added in PHP 5.6.
- * It can leak the length of a string.
- *
- * @since 3.9.2
- *
- * @param string $a Expected string.
- * @param string $b Actual string.
- * @return bool Whether strings are equal.
- */
-function hash_equals( $a, $b ) {
-	$a_length = strlen( $a );
-	if ( $a_length !== strlen( $b ) ) {
-		return false;
-	}
-	$result = 0;
-
-	// Do not attempt to "optimize" this.
-	for ( $i = 0; $i < $a_length; $i++ ) {
-		$result |= ord( $a[ $i ] ) ^ ord( $b[ $i ] );
-	}
-
-	return $result === 0;
-}
-endif;
-
-// JSON_PRETTY_PRINT was introduced in PHP 5.4
-// Defined here to prevent a notice when using it with wp_json_encode()
-if ( ! defined( 'JSON_PRETTY_PRINT' ) ) {
-	define( 'JSON_PRETTY_PRINT', 128 );
 }

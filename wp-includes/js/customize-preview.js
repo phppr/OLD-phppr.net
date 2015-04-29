@@ -2,11 +2,6 @@
 	var api = wp.customize,
 		debounce;
 
-	/**
-	 * Returns a debounced version of the function.
-	 *
-	 * @todo Require Underscore.js for this file and retire this.
-	 */
 	debounce = function( fn, delay, context ) {
 		var timeout;
 		return function() {
@@ -22,12 +17,6 @@
 		};
 	};
 
-	/**
-	 * @constructor
-	 * @augments wp.customize.Messenger
-	 * @augments wp.customize.Class
-	 * @mixes wp.customize.Events
-	 */
 	api.Preview = api.Messenger.extend({
 		/**
 		 * Requires params:
@@ -67,14 +56,14 @@
 		if ( ! api.settings )
 			return;
 
-		var bg;
+		var preview, bg;
 
-		api.preview = new api.Preview({
+		preview = new api.Preview({
 			url: window.location.href,
 			channel: api.settings.channel
 		});
 
-		api.preview.bind( 'settings', function( values ) {
+		preview.bind( 'settings', function( values ) {
 			$.each( values, function( id, value ) {
 				if ( api.has( id ) )
 					api( id ).set( value );
@@ -83,9 +72,9 @@
 			});
 		});
 
-		api.preview.trigger( 'settings', api.settings.values );
+		preview.trigger( 'settings', api.settings.values );
 
-		api.preview.bind( 'setting', function( args ) {
+		preview.bind( 'setting', function( args ) {
 			var value;
 
 			args = args.slice();
@@ -94,36 +83,19 @@
 				value.set.apply( value, args );
 		});
 
-		api.preview.bind( 'sync', function( events ) {
+		preview.bind( 'sync', function( events ) {
 			$.each( events, function( event, args ) {
-				api.preview.trigger( event, args );
+				preview.trigger( event, args );
 			});
-			api.preview.send( 'synced' );
+			preview.send( 'synced' );
 		});
 
-		api.preview.bind( 'active', function() {
-			if ( api.settings.nonce ) {
-				api.preview.send( 'nonce', api.settings.nonce );
-			}
+        preview.bind( 'active', function() {
+            if ( api.settings.nonce )
+                preview.send( 'nonce', api.settings.nonce );
+        });
 
-			api.preview.send( 'documentTitle', document.title );
-		});
-
-		api.preview.send( 'ready', {
-			activePanels: api.settings.activePanels,
-			activeSections: api.settings.activeSections,
-			activeControls: api.settings.activeControls
-		} );
-
-		// Display a loading indicator when preview is reloading, and remove on failure.
-		api.preview.bind( 'loading-initiated', function () {
-			$( 'body' ).addClass( 'wp-customizer-unloading' );
-			$( 'html' ).prop( 'title', api.settings.l10n.loading );
-		});
-		api.preview.bind( 'loading-failed', function () {
-			$( 'body' ).removeClass( 'wp-customizer-unloading' );
-			$( 'html' ).prop( 'title', '' );
-		});
+		preview.send( 'ready' );
 
 		/* Custom Backgrounds */
 		bg = $.map(['color', 'image', 'position_x', 'repeat', 'attachment'], function( prop ) {
@@ -135,6 +107,11 @@
 				head = $('head'),
 				style = $('#custom-background-css'),
 				update;
+
+			// If custom backgrounds are active and we can't find the
+			// default output, bail.
+			if ( body.hasClass('custom-background') && ! style.length )
+				return;
 
 			update = function() {
 				var css = '';
@@ -164,8 +141,6 @@
 				this.bind( update );
 			});
 		});
-
-		api.trigger( 'preview-ready' );
 	});
 
 })( wp, jQuery );

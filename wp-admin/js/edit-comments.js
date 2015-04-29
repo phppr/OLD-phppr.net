@@ -1,8 +1,9 @@
 /* global adminCommentsL10n, thousandsSeparator, list_args, QTags, ajaxurl, wpAjax */
-var setCommentsList, theList, theExtraList, commentReply;
+var setCommentsList, theList, theExtraList, commentReply,
+	toggleWithKeyboard = false;
 
 (function($) {
-var getCount, updateCount, updatePending;
+var getCount, updateCount, updatePending, dashboardTotals;
 
 setCommentsList = function() {
 	var totalInput, perPageInput, pageInput, dimAfter, delBefore, updateTotalCount, delAfter, refillTheExtraList, diff,
@@ -79,7 +80,7 @@ setCommentsList = function() {
 			a.attr('href', 'comment.php?action=un' + action + 'comment&c=' + id + '&_wpnonce=' + settings.data._ajax_nonce);
 			a.attr('data-wp-lists', 'delete:the-comment-list:comment-' + id + '::un' + action + '=1');
 			a.attr('class', 'vim-z vim-destructive');
-			$('.avatar', el).first().clone().prependTo('#undo-' + id + ' .' + action + '-undo-inside');
+			$('.avatar', el).clone().prependTo('#undo-' + id + ' .' + action + '-undo-inside');
 
 			a.click(function(){
 				list.wpList.del(this);
@@ -103,6 +104,24 @@ setCommentsList = function() {
 			lastConfidentTime = time;
 
 		totalInput.val( total.toString() );
+	};
+
+	dashboardTotals = function(n) {
+		var total, appr, totalN, apprN,
+			dash = $('#dashboard_right_now');
+
+		n = n || 0;
+		if ( isNaN(n) || !dash.length )
+			return;
+
+		total = $('span.total-count', dash);
+		appr = $('span.approved-count', dash);
+		totalN = getCount(total);
+
+		totalN = totalN + n;
+		apprN = totalN - getCount( $('span.pending-count', dash) ) - getCount( $('span.spam-count', dash) );
+		updateCount(total, totalN);
+		updateCount(appr, apprN);
 	};
 
 	getCount = function(el) {
@@ -135,11 +154,13 @@ setCommentsList = function() {
 			a.closest('.awaiting-mod')[ 0 === n ? 'addClass' : 'removeClass' ]('count-0');
 			updateCount( a, n );
 		});
+
+		dashboardTotals();
 	};
 
 	// In admin-ajax.php, we send back the unix time stamp instead of 1 on success
 	delAfter = function( r, settings ) {
-		var total_items_i18n, total, spam, trash, pending,
+		var total_items_i18n, total, N, spam, trash, pending,
 			untrash = $(settings.target).parent().is('span.untrash'),
 			unspam = $(settings.target).parent().is('span.unspam'),
 			unapproved = $('#' + settings.element).is('.unapproved');
@@ -185,7 +206,10 @@ setCommentsList = function() {
 			updateCount(a, n);
 		});
 
-		if ( ! $('#dashboard_right_now').length ) {
+		if ( $('#dashboard_right_now').length ) {
+			N = trash ? -1 * trash : 0;
+			dashboardTotals(N);
+		} else {
 			total = totalInput.val() ? parseInt( totalInput.val(), 10 ) : 0;
 			if ( $(settings.target).parent().is('span.undo') )
 				total++;
@@ -351,8 +375,8 @@ commentReply = {
 		$('#com-reply').append( replyrow );
 		$('#replycontent').css('height', '').val('');
 		$('#edithead input').val('');
-		$('.error', replyrow).empty().hide();
-		$( '.spinner', replyrow ).removeClass( 'is-active' );
+		$('.error', replyrow).html('').hide();
+		$('.spinner', replyrow).hide();
 
 		this.cid = '';
 	},
@@ -442,7 +466,7 @@ commentReply = {
 		var post = {};
 
 		$('#replysubmit .error').hide();
-		$( '#replysubmit .spinner' ).addClass( 'is-active' );
+		$('#replysubmit .spinner').show();
 
 		$('#replyrow input').not(':button').each(function() {
 			var t = $(this);
@@ -525,7 +549,7 @@ commentReply = {
 	error : function(r) {
 		var er = r.statusText;
 
-		$( '#replysubmit .spinner' ).removeClass( 'is-active' );
+		$('#replysubmit .spinner').hide();
 
 		if ( r.responseText )
 			er = r.responseText.replace( /<.[^<>]*?>/g, '' );
@@ -570,7 +594,9 @@ $(document).ready(function(){
 		};
 
 		toggle_all = function() {
-			$('#cb-select-all-1').data( 'wp-toggle', 1 ).trigger( 'click' ).removeData( 'wp-toggle' );
+			toggleWithKeyboard = true;
+			$('input:checkbox', '#cb').click().prop('checked', false);
+			toggleWithKeyboard = false;
 		};
 
 		make_bulk = function(value) {
@@ -583,45 +609,14 @@ $(document).ready(function(){
 
 		$.table_hotkeys(
 			$('table.widefat'),
-			[
-				'a', 'u', 's', 'd', 'r', 'q', 'z',
-				['e', edit_comment],
-				['shift+x', toggle_all],
-				['shift+a', make_bulk('approve')],
-				['shift+s', make_bulk('spam')],
-				['shift+d', make_bulk('delete')],
-				['shift+t', make_bulk('trash')],
-				['shift+z', make_bulk('untrash')],
-				['shift+u', make_bulk('unapprove')]
-			],
-			{
-				highlight_first: adminCommentsL10n.hotkeys_highlight_first,
-				highlight_last: adminCommentsL10n.hotkeys_highlight_last,
-				prev_page_link_cb: make_hotkeys_redirect('prev'),
-				next_page_link_cb: make_hotkeys_redirect('next'),
-				hotkeys_opts: {
-					disableInInput: true,
-					type: 'keypress',
-					noDisable: '.check-column input[type="checkbox"]'
-				},
-				cycle_expr: '#the-comment-list tr',
-				start_row_index: 0
-			}
+			['a', 'u', 's', 'd', 'r', 'q', 'z', ['e', edit_comment], ['shift+x', toggle_all],
+			['shift+a', make_bulk('approve')], ['shift+s', make_bulk('spam')],
+			['shift+d', make_bulk('delete')], ['shift+t', make_bulk('trash')],
+			['shift+z', make_bulk('untrash')], ['shift+u', make_bulk('unapprove')]],
+			{ highlight_first: adminCommentsL10n.hotkeys_highlight_first, highlight_last: adminCommentsL10n.hotkeys_highlight_last,
+			prev_page_link_cb: make_hotkeys_redirect('prev'), next_page_link_cb: make_hotkeys_redirect('next') }
 		);
 	}
-
-	// Quick Edit and Reply have an inline comment editor.
-	$( '#the-comment-list' ).on( 'click', '.comment-inline', function (e) {
-		e.preventDefault();
-		var $el = $( this ),
-			action = 'replyto';
-
-		if ( 'undefined' !== typeof $el.data( 'action' ) ) {
-			action = $el.data( 'action' );
-		}
-
-		commentReply.open( $el.data( 'commentId' ), $el.data( 'postId' ), action );
-	} );
 });
 
 })(jQuery);

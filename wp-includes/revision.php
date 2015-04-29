@@ -16,6 +16,8 @@
  * @since 2.6.0
  * @access private
  *
+ * @uses apply_filters() Calls '_wp_post_revision_fields' on 'title', 'content' and 'excerpt' fields.
+ *
  * @param array $post Optional a post array to be processed for insertion as a post revision.
  * @param bool $autosave optional Is the revision an autosave?
  * @return array Post array ready to be inserted as a post revision or array of fields that can be versioned.
@@ -31,20 +33,7 @@ function _wp_post_revision_fields( $post = null, $autosave = false ) {
 			'post_excerpt' => __( 'Excerpt' ),
 		);
 
-		/**
-		 * Filter the list of fields saved in post revisions.
-		 *
-		 * Included by default: 'post_title', 'post_content' and 'post_excerpt'.
-		 *
-		 * Disallowed fields: 'ID', 'post_name', 'post_parent', 'post_date',
-		 * 'post_date_gmt', 'post_status', 'post_type', 'comment_count',
-		 * and 'post_author'.
-		 *
-		 * @since 2.6.0
-		 *
-		 * @param array $fields List of fields to revision. Contains 'post_title',
-		 *                      'post_content', and 'post_excerpt' by default.
-		 */
+		// Runs only once
 		$fields = apply_filters( '_wp_post_revision_fields', $fields );
 
 		// WP uses these internally either in versioning or elsewhere - they cannot be versioned
@@ -70,15 +59,17 @@ function _wp_post_revision_fields( $post = null, $autosave = false ) {
 }
 
 /**
- * Creates a revision for the current version of a post.
+ * Saves an already existing post as a post revision.
  *
- * Typically used immediately after a post update, as every update is a revision,
- * and the most recent revision always matches the current post.
+ * Typically used immediately after post updates.
+ * Adds a copy of the current post as a revision, so latest revision always matches current post
  *
  * @since 2.6.0
  *
- * @param  int $post_id The ID of the post to save as a revision.
- * @return null|int Null or 0 if error, new revision ID, if success.
+ * @uses _wp_put_post_revision()
+ *
+ * @param int $post_id The ID of the post to save as a revision.
+ * @return mixed Null or 0 if error, new revision ID, if success.
  */
 function wp_save_post_revision( $post_id ) {
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
@@ -108,21 +99,7 @@ function wp_save_post_revision( $post_id ) {
 			}
 		}
 
-		/**
-		 * Filter whether the post has changed since the last revision.
-		 *
-		 * By default a revision is saved only if one of the revisioned fields has changed.
-		 * This filter can override that so a revision is saved even if nothing has changed.
-		 *
-		 * @since 3.6.0
-		 *
-		 * @param bool    $check_for_changes Whether to check for changes before saving a new revision.
-		 *                                   Default true.
-		 * @param WP_Post $last_revision     The the last revision post object.
-		 * @param WP_Post $post              The post object.
-		 *
-		 */
-		if ( isset( $last_revision ) && apply_filters( 'wp_save_post_revision_check_for_changes', $check_for_changes = true, $last_revision, $post ) ) {
+		if ( isset( $last_revision ) && apply_filters( 'wp_save_post_revision_check_for_changes', true, $last_revision, $post ) ) {
 			$post_has_changed = false;
 
 			foreach ( array_keys( _wp_post_revision_fields() ) as $field ) {
@@ -131,38 +108,20 @@ function wp_save_post_revision( $post_id ) {
 					break;
 				}
 			}
-
-			/**
-			 * Filter whether a post has changed.
-			 *
-			 * By default a revision is saved only if one of the revisioned fields has changed.
-			 * This filter allows for additional checks to determine if there were changes.
-			 *
-			 * @since 4.1.0
-			 *
-			 * @param bool    $post_has_changed Whether the post has changed.
-			 * @param WP_Post $last_revision    The last revision post object.
-			 * @param WP_Post $post             The post object.
-			 *
-			 */
-			$post_has_changed = (bool) apply_filters( 'wp_save_post_revision_post_has_changed', $post_has_changed, $last_revision, $post );
-
 			//don't save revision if post unchanged
-			if( ! $post_has_changed ) {
+			if( ! $post_has_changed )
 				return;
-			}
 		}
 	}
 
 	$return = _wp_put_post_revision( $post );
 
-	// If a limit for the number of revisions to keep has been set,
-	// delete the oldest ones.
 	$revisions_to_keep = wp_revisions_to_keep( $post );
 
 	if ( $revisions_to_keep < 0 )
 		return $return;
 
+	// all revisions and autosaves
 	$revisions = wp_get_post_revisions( $post_id, array( 'order' => 'ASC' ) );
 
 	$delete = count($revisions) - $revisions_to_keep;
@@ -191,6 +150,8 @@ function wp_save_post_revision( $post_id ) {
  *
  * @since 2.6.0
  *
+ * @uses wp_get_post_revisions()
+ *
  * @param int $post_id The post ID.
  * @param int $user_id optional The post author ID.
  * @return object|bool The autosaved data or false on failure or when no autosave exists.
@@ -204,6 +165,7 @@ function wp_get_post_autosave( $post_id, $user_id = 0 ) {
 				continue;
 
 			return $revision;
+			break;
 		}
 	}
 
@@ -249,9 +211,11 @@ function wp_is_post_autosave( $post ) {
  * @since 2.6.0
  * @access private
  *
+ * @uses wp_insert_post()
+ *
  * @param int|object|array $post Post ID, post object OR post array.
  * @param bool $autosave Optional. Is the revision an autosave?
- * @return mixed WP_Error or 0 if error, new revision ID if success.
+ * @return mixed Null or 0 if error, new revision ID if success.
  */
 function _wp_put_post_revision( $post = null, $autosave = false ) {
 	if ( is_object($post) )
@@ -259,12 +223,13 @@ function _wp_put_post_revision( $post = null, $autosave = false ) {
 	elseif ( !is_array($post) )
 		$post = get_post($post, ARRAY_A);
 
-	if ( ! $post || empty($post['ID']) )
-		return new WP_Error( 'invalid_post', __( 'Invalid post ID' ) );
+	if ( !$post || empty($post['ID']) )
+		return;
 
 	if ( isset($post['post_type']) && 'revision' == $post['post_type'] )
 		return new WP_Error( 'post_type', __( 'Cannot create a revision of a revision' ) );
 
+	$post_id = $post['ID'];
 	$post = _wp_post_revision_fields( $post, $autosave );
 	$post = wp_slash($post); //since data is from db
 
@@ -272,16 +237,8 @@ function _wp_put_post_revision( $post = null, $autosave = false ) {
 	if ( is_wp_error($revision_id) )
 		return $revision_id;
 
-	if ( $revision_id ) {
-		/**
-		 * Fires once a revision has been saved.
-		 *
-		 * @since 2.6.0
-		 *
-		 * @param int $revision_id Post revision ID.
-		 */
+	if ( $revision_id )
 		do_action( '_wp_put_post_revision', $revision_id );
-	}
 
 	return $revision_id;
 }
@@ -291,16 +248,19 @@ function _wp_put_post_revision( $post = null, $autosave = false ) {
  *
  * @since 2.6.0
  *
+ * @uses get_post()
+ *
  * @param int|object $post The post ID or object.
  * @param string $output Optional. OBJECT, ARRAY_A, or ARRAY_N.
  * @param string $filter Optional sanitation filter. @see sanitize_post().
  * @return mixed Null if error or post object if success.
  */
 function wp_get_post_revision(&$post, $output = OBJECT, $filter = 'raw') {
+	$null = null;
 	if ( !$revision = get_post( $post, OBJECT, $filter ) )
 		return $revision;
 	if ( 'revision' !== $revision->post_type )
-		return null;
+		return $null;
 
 	if ( $output == OBJECT ) {
 		return $revision;
@@ -321,6 +281,11 @@ function wp_get_post_revision(&$post, $output = OBJECT, $filter = 'raw') {
  * Can restore a past revision using all fields of the post revision, or only selected fields.
  *
  * @since 2.6.0
+ *
+ * @uses wp_get_post_revision()
+ * @uses wp_update_post()
+ * @uses do_action() Calls 'wp_restore_post_revision' on post ID and revision ID if wp_update_post()
+ *  is successful.
  *
  * @param int|object $revision_id Revision ID or revision object.
  * @param array $fields Optional. What fields to restore from. Defaults to all.
@@ -360,14 +325,6 @@ function wp_restore_post_revision( $revision_id, $fields = null ) {
 	// Update last edit user
 	update_post_meta( $post_id, '_edit_last', get_current_user_id() );
 
-	/**
-	 * Fires after a post revision has been restored.
-	 *
-	 * @since 2.6.0
-	 *
-	 * @param int $post_id     Post ID.
-	 * @param int $revision_id Post revision ID.
-	 */
 	do_action( 'wp_restore_post_revision', $post_id, $revision['ID'] );
 
 	return $post_id;
@@ -380,6 +337,9 @@ function wp_restore_post_revision( $revision_id, $fields = null ) {
  *
  * @since 2.6.0
  *
+ * @uses wp_get_post_revision()
+ * @uses wp_delete_post()
+ *
  * @param int|object $revision_id Revision ID or revision object.
  * @return mixed Null or WP_Error if error, deleted post if success.
  */
@@ -391,17 +351,8 @@ function wp_delete_post_revision( $revision_id ) {
 	if ( is_wp_error( $delete ) )
 		return $delete;
 
-	if ( $delete ) {
-		/**
-		 * Fires once a post revision has been deleted.
-		 *
-		 * @since 2.6.0
-		 *
-		 * @param int          $revision_id Post revision ID.
-		 * @param object|array $revision    Post revision object or array.
-		 */
+	if ( $delete )
 		do_action( 'wp_delete_post_revision', $revision->ID, $revision );
-	}
 
 	return $delete;
 }
@@ -411,7 +362,9 @@ function wp_delete_post_revision( $revision_id ) {
  *
  * @since 2.6.0
  *
- * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global $post.
+ * @uses get_children()
+ *
+ * @param int|object $post_id Post ID or post object
  * @return array An array of revisions, or an empty array if none.
  */
 function wp_get_post_revisions( $post_id = 0, $args = null ) {
@@ -419,7 +372,7 @@ function wp_get_post_revisions( $post_id = 0, $args = null ) {
 	if ( ! $post || empty( $post->ID ) )
 		return array();
 
-	$defaults = array( 'order' => 'DESC', 'orderby' => 'date ID', 'check_enabled' => true );
+	$defaults = array( 'order' => 'DESC', 'orderby' => 'date', 'check_enabled' => true );
 	$args = wp_parse_args( $args, $defaults );
 
 	if ( $args['check_enabled'] && ! wp_revisions_enabled( $post ) )
@@ -438,7 +391,9 @@ function wp_get_post_revisions( $post_id = 0, $args = null ) {
  *
  * @since 3.6.0
  *
- * @param WP_Post $post The post object.
+ * @uses wp_revisions_to_keep()
+ *
+ * @param object $post The post object.
  * @return bool True if number of revisions to keep isn't zero, false otherwise.
  */
 function wp_revisions_enabled( $post ) {
@@ -447,15 +402,14 @@ function wp_revisions_enabled( $post ) {
 
 /**
  * Determine how many revisions to retain for a given post.
- *
- * By default, an infinite number of revisions are kept.
- *
- * The constant WP_POST_REVISIONS can be set in wp-config to specify the limit
- * of revisions to keep.
+ * By default, an infinite number of revisions are stored if a post type supports revisions.
  *
  * @since 3.6.0
  *
- * @param WP_Post $post The post object.
+ * @uses post_type_supports()
+ * @uses apply_filters() Calls 'wp_revisions_to_keep' hook on the number of revisions.
+ *
+ * @param object $post The post object.
  * @return int The number of revisions to keep.
  */
 function wp_revisions_to_keep( $post ) {
@@ -469,16 +423,6 @@ function wp_revisions_to_keep( $post ) {
 	if ( ! post_type_supports( $post->post_type, 'revisions' ) )
 		$num = 0;
 
-	/**
-	 * Filter the number of revisions to save for the given post.
-	 *
-	 * Overrides the value of WP_POST_REVISIONS.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param int     $num  Number of revisions to store.
-	 * @param WP_Post $post Post object.
-	 */
 	return (int) apply_filters( 'wp_revisions_to_keep', $num, $post );
 }
 
@@ -572,7 +516,9 @@ function _wp_get_post_revision_version( $revision ) {
  * @since 3.6.0
  * @access private
  *
- * @param WP_Post $post Post object
+ * @uses wp_get_post_revisions()
+ *
+ * @param object $post Post object
  * @param array $revisions Current revisions of the post
  * @return bool true if the revisions were upgraded, false if problems
  */

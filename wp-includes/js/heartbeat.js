@@ -1,10 +1,14 @@
 /**
  * Heartbeat API
  *
+ * Note: this API is "experimental" meaning it will likely change a lot
+ * in the next few releases based on feedback from 3.6.0. If you intend
+ * to use it, please follow the development closely.
+ *
  * Heartbeat is a simple server polling API that sends XHR requests to
  * the server every 15 - 60 seconds and triggers events (or callbacks) upon
  * receiving data. Currently these 'ticks' handle transports for post locking,
- * login-expiration warnings, autosave, and related tasks while a user is logged in.
+ * login-expiration warnings, and related tasks while a user is logged in.
  *
  * Available PHP filters (in ajax-actions.php):
  * - heartbeat_received
@@ -57,16 +61,13 @@
 				// Used when the interval is reset
 				originalInterval: 0,
 
-				// Used to limit the number of AJAX requests.
-				minimalInterval: 0,
-
 				// Used together with tempInterval
 				countdown: 0,
 
 				// Whether a connection is currently in progress
 				connecting: false,
 
-				// Whether a connection error occurred
+				// Whether a connection error occured
 				connectionError: false,
 
 				// Used to track non-critical errors
@@ -84,8 +85,10 @@
 				// Flags whether events tracking user activity were set
 				userActivityEvents: false,
 
-				checkFocusTimer: 0,
-				beatTimer: 0
+				// References to various timeouts
+				beatTimer: 0,
+				winBlurTimer: 0,
+				frameBlurTimer: 0
 			};
 
 		/**
@@ -96,8 +99,6 @@
 		 * @return void
 		 */
 		function initialize() {
-			var options, hidden, visibilityState, visibilitychange;
-
 			if ( typeof window.pagenow === 'string' ) {
 				settings.screenId = window.pagenow;
 			}
@@ -108,37 +109,22 @@
 
 			// Pull in options passed from PHP
 			if ( typeof window.heartbeatSettings === 'object' ) {
-				options = window.heartbeatSettings;
+				var options = window.heartbeatSettings;
 
 				// The XHR URL can be passed as option when window.ajaxurl is not set
 				if ( ! settings.url && options.ajaxurl ) {
 					settings.url = options.ajaxurl;
 				}
 
-				// The interval can be from 15 to 120 sec. and can be set temporarily to 5 sec.
-				// It can be set in the initial options or changed later from JS and/or from PHP.
+				// The interval can be from 15 to 60 sec. and can be set temporarily to 5 sec.
 				if ( options.interval ) {
 					settings.mainInterval = options.interval;
 
 					if ( settings.mainInterval < 15 ) {
 						settings.mainInterval = 15;
-					} else if ( settings.mainInterval > 120 ) {
-						settings.mainInterval = 120;
+					} else if ( settings.mainInterval > 60 ) {
+						settings.mainInterval = 60;
 					}
-				}
-
-				// Used to limit the number of AJAX requests. Overrides all other intervals if they are shorter.
-				// Needed for some hosts that cannot handle frequent requests and the user may exceed the allocated server CPU time, etc.
-				// The minimal interval can be up to 600 sec. however setting it to longer than 120 sec. will limit or disable
-				// some of the functionality (like post locks).
-				// Once set at initialization, minimalInterval cannot be changed/overriden.
-				if ( options.minimalInterval ) {
-					options.minimalInterval = parseInt( options.minimalInterval, 10 );
-					settings.minimalInterval = options.minimalInterval > 0 && options.minimalInterval <= 600 ? options.minimalInterval * 1000 : 0;
-				}
-
-				if ( settings.minimalInterval && settings.mainInterval < settings.minimalInterval ) {
-					settings.mainInterval = settings.minimalInterval;
 				}
 
 				// 'screenId' can be added from settings on the front-end where the JS global 'pagenow' is not set
@@ -155,47 +141,16 @@
 			settings.mainInterval = settings.mainInterval * 1000;
 			settings.originalInterval = settings.mainInterval;
 
-			// Switch the interval to 120 sec. by using the Page Visibility API.
-			// If the browser doesn't support it (Safari < 7, Android < 4.4, IE < 10), the interval
-			// will be increased to 120 sec. after 5 min. of mouse and keyboard inactivity.
-			if ( typeof document.hidden !== 'undefined' ) {
-				hidden = 'hidden';
-				visibilitychange = 'visibilitychange';
-				visibilityState = 'visibilityState';
-			} else if ( typeof document.msHidden !== 'undefined' ) { // IE10
-				hidden = 'msHidden';
-				visibilitychange = 'msvisibilitychange';
-				visibilityState = 'msVisibilityState';
-			} else if ( typeof document.webkitHidden !== 'undefined' ) { // Android
-				hidden = 'webkitHidden';
-				visibilitychange = 'webkitvisibilitychange';
-				visibilityState = 'webkitVisibilityState';
-			}
-
-			if ( hidden ) {
-				if ( document[hidden] ) {
-					settings.hasFocus = false;
-				}
-
-				$document.on( visibilitychange + '.wp-heartbeat', function() {
-					if ( document[visibilityState] === 'hidden' ) {
-						blurred();
-						window.clearInterval( settings.checkFocusTimer );
-					} else {
-						focused();
-						if ( document.hasFocus ) {
-							settings.checkFocusTimer = window.setInterval( checkFocus, 10000 );
-						}
-					}
-				});
-			}
-
-			// Use document.hasFocus() if available.
-			if ( document.hasFocus ) {
-				settings.checkFocusTimer = window.setInterval( checkFocus, 10000 );
-			}
-
-			$(window).on( 'unload.wp-heartbeat', function() {
+			// Set focus/blur events on the window
+			$(window).on( 'blur.wp-heartbeat-focus', function() {
+				setFrameFocusEvents();
+				// We don't know why the 'blur' was fired. Either the user clicked in an iframe or outside the browser.
+				// Running blurred() after some timeout lets us cancel it if the user clicked in an iframe.
+				settings.winBlurTimer = window.setTimeout( function(){ blurred(); }, 500 );
+			}).on( 'focus.wp-heartbeat-focus', function() {
+				removeFrameFocusEvents();
+				focused();
+			}).on( 'unload.wp-heartbeat', function() {
 				// Don't connect any more
 				settings.suspend = true;
 
@@ -206,7 +161,7 @@
 			});
 
 			// Check for user activity every 30 seconds.
-			window.setInterval( checkUserActivity, 30000 );
+			window.setInterval( function(){ checkUserActivity(); }, 30000 );
 
 			// Start one tick after DOM ready
 			$document.ready( function() {
@@ -253,21 +208,6 @@
 			} catch(e) {}
 
 			return false;
-		}
-
-		/**
-		 * Check if the document's focus has changed
-		 *
-		 * @access private
-		 *
-		 * @return void
-		 */
-		function checkFocus() {
-			if ( settings.hasFocus && ! document.hasFocus() ) {
-				blurred();
-			} else if ( ! settings.hasFocus && document.hasFocus() ) {
-				focused();
-			}
 		}
 
 		/**
@@ -438,16 +378,12 @@
 				}
 			}
 
-			if ( settings.minimalInterval && interval < settings.minimalInterval ) {
-				interval = settings.minimalInterval;
-			}
-
 			window.clearTimeout( settings.beatTimer );
 
 			if ( delta < interval ) {
 				settings.beatTimer = window.setTimeout(
 					function() {
-						connect();
+							connect();
 					},
 					interval - delta
 				);
@@ -457,24 +393,26 @@
 		}
 
 		/**
-		 * Set the internal state when the browser window becomes hidden or loses focus
+		 * Set the internal state when the browser window looses focus
 		 *
 		 * @access private
 		 *
 		 * @return void
 		 */
 		function blurred() {
+			clearFocusTimers();
 			settings.hasFocus = false;
 		}
 
 		/**
-		 * Set the internal state when the browser window becomes visible or is in focus
+		 * Set the internal state when the browser window is focused
 		 *
 		 * @access private
 		 *
 		 * @return void
 		 */
 		function focused() {
+			clearFocusTimers();
 			settings.userActivity = time();
 
 			// Resume if suspended
@@ -484,6 +422,68 @@
 				settings.hasFocus = true;
 				scheduleNextTick();
 			}
+		}
+
+		/**
+		 * Add focus/blur events to all local iframes
+		 *
+		 * Used to detect when focus is moved from the main window to an iframe
+		 *
+		 * @access private
+		 *
+		 * @return void
+		 */
+		function setFrameFocusEvents() {
+			$('iframe').each( function( i, frame ) {
+				if ( ! isLocalFrame( frame ) ) {
+					return;
+				}
+
+				if ( $.data( frame, 'wp-heartbeat-focus' ) ) {
+					return;
+				}
+
+				$.data( frame, 'wp-heartbeat-focus', 1 );
+
+				$( frame.contentWindow ).on( 'focus.wp-heartbeat-focus', function() {
+					focused();
+				}).on('blur.wp-heartbeat-focus', function() {
+					setFrameFocusEvents();
+					// We don't know why 'blur' was fired. Either the user clicked in the main window or outside the browser.
+					// Running blurred() after some timeout lets us cancel it if the user clicked in the main window.
+					settings.frameBlurTimer = window.setTimeout( function(){ blurred(); }, 500 );
+				});
+			});
+		}
+
+		/**
+		 * Remove the focus/blur events to all local iframes
+		 *
+		 * @access private
+		 *
+		 * @return void
+		 */
+		function removeFrameFocusEvents() {
+			$('iframe').each( function( i, frame ) {
+				if ( ! isLocalFrame( frame ) ) {
+					return;
+				}
+
+				$.removeData( frame, 'wp-heartbeat-focus' );
+				$( frame.contentWindow ).off( '.wp-heartbeat-focus' );
+			});
+		}
+
+		/**
+		 * Clear the reset timers for focus/blur events on the window and iframes
+		 *
+		 * @access private
+		 *
+		 * @return void
+		 */
+		function clearFocusTimers() {
+			window.clearTimeout( settings.winBlurTimer );
+			window.clearTimeout( settings.frameBlurTimer );
 		}
 
 		/**
@@ -498,9 +498,11 @@
 			$document.off( '.wp-heartbeat-active' );
 
 			$('iframe').each( function( i, frame ) {
-				if ( isLocalFrame( frame ) ) {
-					$( frame.contentWindow ).off( '.wp-heartbeat-active' );
+				if ( ! isLocalFrame( frame ) ) {
+					return;
 				}
+
+				$( frame.contentWindow ).off( '.wp-heartbeat-active' );
 			});
 
 			focused();
@@ -521,28 +523,25 @@
 		function checkUserActivity() {
 			var lastActive = settings.userActivity ? time() - settings.userActivity : 0;
 
-			// Throttle down when no mouse or keyboard activity for 5 min.
 			if ( lastActive > 300000 && settings.hasFocus ) {
+				// Throttle down when no mouse or keyboard activity for 5 min
 				blurred();
 			}
 
-			// Suspend after 10 min. of inactivity when suspending is enabled.
-			// Always suspend after 60 min. of inactivity. This will release the post lock, etc.
-			if ( ( settings.suspendEnabled && lastActive > 600000 ) || lastActive > 3600000 ) {
+			if ( settings.suspendEnabled && lastActive > 1200000 ) {
+				// Suspend after 20 min. of inactivity
 				settings.suspend = true;
 			}
 
 			if ( ! settings.userActivityEvents ) {
-				$document.on( 'mouseover.wp-heartbeat-active keyup.wp-heartbeat-active touchend.wp-heartbeat-active', function() {
-					userIsActive();
-				});
+				$document.on( 'mouseover.wp-heartbeat-active keyup.wp-heartbeat-active', function(){ userIsActive(); } );
 
 				$('iframe').each( function( i, frame ) {
-					if ( isLocalFrame( frame ) ) {
-						$( frame.contentWindow ).on( 'mouseover.wp-heartbeat-active keyup.wp-heartbeat-active touchend.wp-heartbeat-active', function() {
-							userIsActive();
-						});
+					if ( ! isLocalFrame( frame ) ) {
+						return;
 					}
+
+					$( frame.contentWindow ).on( 'mouseover.wp-heartbeat-active keyup.wp-heartbeat-active', function(){ userIsActive(); } );
 				});
 
 				settings.userActivityEvents = true;
@@ -602,7 +601,7 @@
 		 * In this case the number of 'ticks' can be passed as second argument.
 		 * If the window doesn't have focus, the interval slows down to 2 min.
 		 *
-		 * @param mixed speed Interval: 'fast' or 5, 15, 30, 60, 120
+		 * @param mixed speed Interval: 'fast' or 5, 15, 30, 60
 		 * @param string ticks Used with speed = 'fast' or 5, how many ticks before the interval reverts back
 		 * @return int Current interval in seconds
 		 */
@@ -625,19 +624,12 @@
 					case 60:
 						newInterval = 60000;
 						break;
-					case 120:
-						newInterval = 120000;
-						break;
 					case 'long-polling':
 						// Allow long polling, (experimental)
 						settings.mainInterval = 0;
 						return 0;
 					default:
 						newInterval = settings.originalInterval;
-				}
-
-				if ( settings.minimalInterval && newInterval < settings.minimalInterval ) {
-					newInterval = settings.minimalInterval;
 				}
 
 				if ( 5000 === newInterval ) {

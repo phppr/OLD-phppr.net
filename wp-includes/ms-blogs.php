@@ -33,11 +33,11 @@ function wpmu_update_blogs_date() {
  * @since MU
  *
  * @param int $blog_id Blog ID
- * @return string Full URL of the blog if found. Empty string if not.
+ * @return string
  */
 function get_blogaddress_by_id( $blog_id ) {
 	$bloginfo = get_blog_details( (int) $blog_id, false ); // only get bare details!
-	return ( $bloginfo ) ? esc_url( 'http://' . $bloginfo->domain . $bloginfo->path ) : '';
+	return esc_url( 'http://' . $bloginfo->domain . $bloginfo->path );
 }
 
 /**
@@ -99,7 +99,7 @@ function get_id_from_blogname( $slug ) {
  *
  * @param int|string|array $fields A blog ID, a blog slug, or an array of fields to query against. Optional. If not specified the current blog ID is used.
  * @param bool $get_all Whether to retrieve all details or only the details in the blogs table. Default is true.
- * @return object|false Blog details on success. False on failure.
+ * @return object Blog details.
  */
 function get_blog_details( $fields = null, $get_all = true ) {
 	global $wpdb;
@@ -235,14 +235,10 @@ function get_blog_details( $fields = null, $get_all = true ) {
  *
  * @since MU
  *
- * @param int $blog_id Optional. Blog ID. Defaults to current blog.
+ * @param int $blog_id Blog ID
  */
-function refresh_blog_details( $blog_id = 0 ) {
+function refresh_blog_details( $blog_id ) {
 	$blog_id = (int) $blog_id;
-	if ( ! $blog_id ) {
-		$blog_id = get_current_blog_id();
-	}
-
 	$details = get_blog_details( $blog_id, false );
 	if ( ! $details ) {
 		// Make sure clean_blog_cache() gets the blog ID
@@ -296,13 +292,8 @@ function update_blog_details( $blog_id, $details = array() ) {
 
 	$update_details = array();
 	$fields = array( 'site_id', 'domain', 'path', 'registered', 'last_updated', 'public', 'archived', 'mature', 'spam', 'deleted', 'lang_id');
-	foreach ( array_intersect( array_keys( $details ), $fields ) as $field ) {
-		if ( 'path' === $field ) {
-			$details[ $field ] = trailingslashit( '/' . trim( $details[ $field ], '/' ) );
-		}
-
-		$update_details[ $field ] = $details[ $field ];
-	}
+	foreach ( array_intersect( array_keys( $details ), $fields ) as $field )
+		$update_details[$field] = $details[$field];
 
 	$result = $wpdb->update( $wpdb->blogs, $update_details, array('blog_id' => $blog_id) );
 
@@ -465,7 +456,7 @@ function get_blog_option( $id, $option, $default = false ) {
 	/**
 	 * Filter a blog option value.
 	 *
-	 * The dynamic portion of the hook name, `$option`, refers to the blog option name.
+	 * The dynamic portion of the hook name, $option, refers to the blog option name.
 	 *
 	 * @since 3.5.0
 	 *
@@ -578,7 +569,7 @@ function update_blog_option( $id, $option, $value, $deprecated = null ) {
  *
  * @param int $new_blog The id of the blog you want to switch to. Default: current blog
  * @param bool $deprecated Deprecated argument
- * @return bool Always returns True.
+ * @return bool True on success, false if the validation failed
  */
 function switch_to_blog( $new_blog, $deprecated = null ) {
 	global $wpdb, $wp_roles;
@@ -625,11 +616,10 @@ function switch_to_blog( $new_blog, $deprecated = null ) {
 		wp_cache_init();
 
 		if ( function_exists( 'wp_cache_add_global_groups' ) ) {
-			if ( is_array( $global_groups ) ) {
+			if ( is_array( $global_groups ) )
 				wp_cache_add_global_groups( $global_groups );
-			} else {
-				wp_cache_add_global_groups( array( 'users', 'userlogins', 'usermeta', 'user_meta', 'useremail', 'userslugs', 'site-transient', 'site-options', 'site-lookup', 'blog-lookup', 'blog-details', 'rss', 'global-posts', 'blog-id-cache' ) );
-			}
+			else
+				wp_cache_add_global_groups( array( 'users', 'userlogins', 'usermeta', 'user_meta', 'site-transient', 'site-options', 'site-lookup', 'blog-lookup', 'blog-details', 'rss', 'global-posts', ' blog-id-cache' ) );
 			wp_cache_add_non_persistent_groups( array( 'comment', 'counts', 'plugins' ) );
 		}
 	}
@@ -689,11 +679,10 @@ function restore_current_blog() {
 		wp_cache_init();
 
 		if ( function_exists( 'wp_cache_add_global_groups' ) ) {
-			if ( is_array( $global_groups ) ) {
+			if ( is_array( $global_groups ) )
 				wp_cache_add_global_groups( $global_groups );
-			} else {
-				wp_cache_add_global_groups( array( 'users', 'userlogins', 'usermeta', 'user_meta', 'useremail', 'userslugs', 'site-transient', 'site-options', 'site-lookup', 'blog-lookup', 'blog-details', 'rss', 'global-posts', 'blog-id-cache' ) );
-			}
+			else
+				wp_cache_add_global_groups( array( 'users', 'userlogins', 'usermeta', 'user_meta', 'site-transient', 'site-options', 'site-lookup', 'blog-lookup', 'blog-details', 'rss', 'global-posts', ' blog-id-cache' ) );
 			wp_cache_add_non_persistent_groups( array( 'comment', 'counts', 'plugins' ) );
 		}
 	}
@@ -872,13 +861,11 @@ function get_last_updated( $deprecated = '', $start = 0, $quantity = 40 ) {
  */
 function _update_blog_date_on_post_publish( $new_status, $old_status, $post ) {
 	$post_type_obj = get_post_type_object( $post->post_type );
-	if ( ! $post_type_obj || ! $post_type_obj->public ) {
+	if ( ! $post_type_obj->public )
 		return;
-	}
 
-	if ( 'publish' != $new_status && 'publish' != $old_status ) {
+	if ( 'publish' != $new_status && 'publish' != $old_status )
 		return;
-	}
 
 	// Post was freshly published, published post was saved, or published post was unpublished.
 
@@ -896,51 +883,12 @@ function _update_blog_date_on_post_delete( $post_id ) {
 	$post = get_post( $post_id );
 
 	$post_type_obj = get_post_type_object( $post->post_type );
-	if ( ! $post_type_obj || ! $post_type_obj->public ) {
+	if ( ! $post_type_obj->public )
 		return;
-	}
 
-	if ( 'publish' != $post->post_status ) {
+	if ( 'publish' != $post->post_status )
 		return;
-	}
 
 	wpmu_update_blogs_date();
-}
-
-/**
- * Handler for updating the blog posts count date when a post is deleted.
- *
- * @since 4.0.0
- *
- * @param int $post_id Post ID.
- */
-function _update_posts_count_on_delete( $post_id ) {
-	$post = get_post( $post_id );
-
-	if ( ! $post || 'publish' !== $post->post_status ) {
-		return;
-	}
-
-	update_posts_count();
-}
-
-/**
- * Handler for updating the blog posts count date when a post status changes.
- *
- * @since 4.0.0
- *
- * @param string $new_status The status the post is changing to.
- * @param string $old_status The status the post is changing from.
- */
-function _update_posts_count_on_transition_post_status( $new_status, $old_status ) {
-	if ( $new_status === $old_status ) {
-		return;
-	}
-
-	if ( 'publish' !== $new_status && 'publish' !== $old_status ) {
-		return;
-	}
-
-	update_posts_count();
 }
 

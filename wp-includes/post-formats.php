@@ -26,7 +26,7 @@ function get_post_format( $post = null ) {
 	if ( empty( $_format ) )
 		return false;
 
-	$format = reset( $_format );
+	$format = array_shift( $_format );
 
 	return str_replace('post-format-', '', $format->slug );
 }
@@ -35,6 +35,8 @@ function get_post_format( $post = null ) {
  * Check if a post has any of the given formats, or any format.
  *
  * @since 3.1.0
+ *
+ * @uses has_term()
  *
  * @param string|array $format Optional. The format or formats to check.
  * @param object|int $post Optional. The post to check. If not supplied, defaults to the current post if used in the loop.
@@ -106,6 +108,8 @@ function get_post_format_strings() {
  *
  * @since 3.1.0
  *
+ * @uses get_post_format_strings()
+ *
  * @return array The array of post format slugs.
  */
 function get_post_format_slugs() {
@@ -117,6 +121,8 @@ function get_post_format_slugs() {
  * Returns a pretty, translated version of a post format slug
  *
  * @since 3.1.0
+ *
+ * @uses get_post_format_strings()
  *
  * @param string $slug A post format slug.
  * @return string The translated post format name.
@@ -161,6 +167,7 @@ function _post_format_request( $qvs ) {
 		$qvs['post_type'] = $tax->object_type;
 	return $qvs;
 }
+add_filter( 'request', '_post_format_request' );
 
 /**
  * Filters the post format term link to remove the format prefix.
@@ -179,6 +186,7 @@ function _post_format_link( $link, $term, $taxonomy ) {
 		return add_query_arg( 'post_format', str_replace( 'post-format-', '', $term->slug ), $link );
 	}
 }
+add_filter( 'term_link', '_post_format_link', 10, 3 );
 
 /**
  * Remove the post format prefix from the name property of the term object created by get_term().
@@ -192,6 +200,7 @@ function _post_format_get_term( $term ) {
 	}
 	return $term;
 }
+add_filter( 'get_post_format', '_post_format_get_term' );
 
 /**
  * Remove the post format prefix from the name property of the term objects created by get_terms().
@@ -215,6 +224,7 @@ function _post_format_get_terms( $terms, $taxonomies, $args ) {
 	}
 	return $terms;
 }
+add_filter( 'get_terms', '_post_format_get_terms', 10, 3 );
 
 /**
  * Remove the post format prefix from the name property of the term objects created by wp_get_object_terms().
@@ -230,3 +240,4 @@ function _post_format_wp_get_object_terms( $terms ) {
 	}
 	return $terms;
 }
+add_filter( 'wp_get_object_terms', '_post_format_wp_get_object_terms' );

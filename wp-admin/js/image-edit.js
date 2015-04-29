@@ -5,7 +5,6 @@ var imageEdit = window.imageEdit = {
 	iasapi : {},
 	hold : {},
 	postid : '',
-	_view : false,
 
 	intval : function(f) {
 		return f | 0;
@@ -63,7 +62,7 @@ var imageEdit = window.imageEdit = {
 	},
 
 	toggleHelp : function(el) {
-		$( el ).parents( '.imgedit-group-top' ).toggleClass( 'imgedit-help-toggled' ).find( '.imgedit-help' ).slideToggle( 'fast' );
+		$(el).siblings('.imgedit-help').slideToggle('fast');
 		return false;
 	},
 
@@ -242,18 +241,11 @@ var imageEdit = window.imageEdit = {
 		$.post(ajaxurl, data, function(r) {
 			$('#image-editor-' + postid).empty().append(r);
 			t.toggleEditor(postid, 0);
-			// refresh the attachment model so that changes propagate
-			if ( t._view ) {
-				t._view.refresh();
-			}
 		});
 	},
 
 	save : function(postid, nonce) {
-		var data,
-			target = this.getTarget(postid),
-			history = this.filterHistory(postid, 0),
-			self = this;
+		var data, target = this.getTarget(postid), history = this.filterHistory(postid, 0);
 
 		if ( '' === history ) {
 			return false;
@@ -274,7 +266,7 @@ var imageEdit = window.imageEdit = {
 			var ret = JSON.parse(r);
 
 			if ( ret.error ) {
-				$('#imgedit-response-' + postid).html('<div class="error"><p>' + ret.error + '</p></div>');
+				$('#imgedit-response-' + postid).html('<div class="error"><p>' + ret.error + '</p><div>');
 				imageEdit.close(postid);
 				return;
 			}
@@ -291,22 +283,16 @@ var imageEdit = window.imageEdit = {
 				$('#imgedit-response-' + postid).html('<div class="updated"><p>' + ret.msg + '</p></div>');
 			}
 
-			if ( self._view ) {
-				self._view.save();
-			} else {
-				imageEdit.close(postid);
-			}
+			imageEdit.close(postid);
 		});
 	},
 
-	open : function( postid, nonce, view ) {
-		this._view = view;
-
-		var dfd, data, elem = $('#image-editor-' + postid), head = $('#media-head-' + postid),
+	open : function(postid, nonce) {
+		var data, elem = $('#image-editor-' + postid), head = $('#media-head-' + postid),
 			btn = $('#imgedit-open-btn-' + postid), spin = btn.siblings('.spinner');
 
 		btn.prop('disabled', true);
-		spin.addClass( 'is-active' );
+		spin.show();
 
 		data = {
 			'action': 'image-editor',
@@ -315,20 +301,13 @@ var imageEdit = window.imageEdit = {
 			'do': 'open'
 		};
 
-		dfd = $.ajax({
-			url:  ajaxurl,
-			type: 'post',
-			data: data
-		}).done(function( html ) {
-			elem.html( html );
+		elem.load(ajaxurl, data, function() {
+			elem.fadeIn('fast');
 			head.fadeOut('fast', function(){
-				elem.fadeIn('fast');
 				btn.removeAttr('disabled');
-				spin.removeClass( 'is-active' );
+				spin.hide();
 			});
 		});
-
-		return dfd;
 	},
 
 	imgLoaded : function(postid) {
@@ -340,10 +319,8 @@ var imageEdit = window.imageEdit = {
 	},
 
 	initCrop : function(postid, image, parent) {
-		var t = this,
-			selW = $('#imgedit-sel-width-' + postid),
-			selH = $('#imgedit-sel-height-' + postid),
-			$img;
+		var t = this, selW = $('#imgedit-sel-width-' + postid),
+			selH = $('#imgedit-sel-height-' + postid);
 
 		t.iasapi = $(image).imgAreaSelect({
 			parent: parent,
@@ -353,13 +330,7 @@ var imageEdit = window.imageEdit = {
 			minWidth: 3,
 			minHeight: 3,
 
-			onInit: function( img ) {
-				// Ensure that the imgareaselect wrapper elements are position:absolute
-				// (even if we're in a position:fixed modal)
-				$img = $( img );
-				$img.next().css( 'position', 'absolute' )
-					.nextAll( '.imgareaselect-outer' ).css( 'position', 'absolute' );
-
+			onInit: function() {
 				parent.children().mousedown(function(e){
 					var ratio = false, sel, defRatio;
 
@@ -392,15 +363,22 @@ var imageEdit = window.imageEdit = {
 	},
 
 	setCropSelection : function(postid, c) {
-		var sel;
-
-		c = c || 0;
+		var sel, min = $('#imgedit-minthumb-' + postid).val() || '128:128',
+			sizer = this.hold.sizer;
+			min = min.split(':');
+			c = c || 0;
 
 		if ( !c || ( c.width < 3 && c.height < 3 ) ) {
 			this.setDisabled($('.imgedit-crop', '#imgedit-panel-' + postid), 0);
 			this.setDisabled($('#imgedit-crop-sel-' + postid), 0);
 			$('#imgedit-sel-width-' + postid).val('');
 			$('#imgedit-sel-height-' + postid).val('');
+			$('#imgedit-selection-' + postid).val('');
+			return false;
+		}
+
+		if ( c.width < (min[0] * sizer) && c.height < (min[1] * sizer) ) {
+			this.setDisabled($('.imgedit-crop', '#imgedit-panel-' + postid), 0);
 			$('#imgedit-selection-' + postid).val('');
 			return false;
 		}
@@ -419,22 +397,10 @@ var imageEdit = window.imageEdit = {
 
 		this.iasapi = {};
 		this.hold = {};
-
-		// If we've loaded the editor in the context of a Media Modal, then switch to the previous view,
-		// whatever that might have been.
-		if ( this._view ){
-			this._view.back();
-		}
-
-		// In case we are not accessing the image editor in the context of a View, close the editor the old-skool way
-		else {
-			$('#image-editor-' + postid).fadeOut('fast', function() {
-				$('#media-head-' + postid).fadeIn('fast');
-				$(this).empty();
-			});
-		}
-
-
+		$('#image-editor-' + postid).fadeOut('fast', function() {
+			$('#media-head-' + postid).fadeIn('fast');
+			$(this).empty();
+		});
 	},
 
 	notsaved : function(postid) {

@@ -3,7 +3,6 @@
 /// getID3() by James Heinrich <info@getid3.org>               //
 //  available at http://getid3.sourceforge.net                 //
 //            or http://www.getid3.org                         //
-//          also https://github.com/JamesHeinrich/getID3       //
 /////////////////////////////////////////////////////////////////
 // See readme.txt for more details                             //
 /////////////////////////////////////////////////////////////////
@@ -282,8 +281,10 @@ class getid3_matroska extends getid3_handler
 
 						switch ($trackarray['CodecID']) {
 							case 'V_MS/VFW/FOURCC':
-								getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio-video.riff.php', __FILE__, true);
-
+								if (!getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio-video.riff.php', __FILE__, false)) {
+									$this->warning('Unable to parse codec private data ['.basename(__FILE__).':'.__LINE__.'] because cannot include "module.audio-video.riff.php"');
+									break;
+								}
 								$parsed = getid3_riff::ParseBITMAPINFOHEADER($trackarray['CodecPrivate']);
 								$track_info['codec'] = getid3_riff::fourccLookup($parsed['fourcc']);
 								$info['matroska']['track_codec_parsed'][$trackarray['TrackNumber']] = $parsed;
@@ -334,7 +335,10 @@ class getid3_matroska extends getid3_handler
 							case 'A_MPEG/L3':
 							case 'A_MPEG/L2':
 							case 'A_FLAC':
-								getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio.'.($track_info['dataformat'] == 'mp2' ? 'mp3' : $track_info['dataformat']).'.php', __FILE__, true);
+								if (!getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio.'.($track_info['dataformat'] == 'mp2' ? 'mp3' : $track_info['dataformat']).'.php', __FILE__, false)) {
+									$this->warning('Unable to parse audio data ['.basename(__FILE__).':'.__LINE__.'] because cannot include "module.audio.'.$track_info['dataformat'].'.php"');
+									break;
+								}
 
 								if (!isset($info['matroska']['track_data_offsets'][$trackarray['TrackNumber']])) {
 									$this->warning('Unable to parse audio data ['.basename(__FILE__).':'.__LINE__.'] because $info[matroska][track_data_offsets]['.$trackarray['TrackNumber'].'] not set');
@@ -381,6 +385,10 @@ class getid3_matroska extends getid3_handler
 								}
 								if (!empty($getid3_temp->info['warning'])) {
 									foreach ($getid3_temp->info['warning'] as $newerror) {
+										if ($track_info['dataformat'] == 'mp3' && preg_match('/^Probable truncated file: expecting \d+ bytes of audio data, only found \d+ \(short by \d+ bytes\)$/', $newerror)) {
+											// LAME/Xing header is probably set, but audio data is chunked into Matroska file and near-impossible to verify if audio stream is complete, so ignore useless warning
+											continue;
+										}
 										$this->warning($class.'() says: ['.$newerror.']');
 									}
 								}
@@ -392,7 +400,7 @@ class getid3_matroska extends getid3_handler
 							case 'A_AAC/MPEG2/LC/SBR':
 							case 'A_AAC/MPEG4/LC':
 							case 'A_AAC/MPEG4/LC/SBR':
-								$this->warning($trackarray['CodecID'].' audio data contains no header, audio/video bitrates can\'t be calculated');
+							    $this->warning($trackarray['CodecID'].' audio data contains no header, audio/video bitrates can\'t be calculated');
 								break;
 
 							case 'A_VORBIS':
@@ -407,7 +415,10 @@ class getid3_matroska extends getid3_handler
 								}
 								$vorbis_offset -= 1;
 
-								getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio.ogg.php', __FILE__, true);
+								if (!getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio.ogg.php', __FILE__, false)) {
+									$this->warning('Unable to parse audio data ['.basename(__FILE__).':'.__LINE__.'] because cannot include "module.audio.ogg.php"');
+									break;
+								}
 
 								// create temp instance
 								$getid3_temp = new getID3();
@@ -444,7 +455,10 @@ class getid3_matroska extends getid3_handler
 								break;
 
 							case 'A_MS/ACM':
-								getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio-video.riff.php', __FILE__, true);
+								if (!getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'module.audio-video.riff.php', __FILE__, false)) {
+									$this->warning('Unable to parse audio data ['.basename(__FILE__).':'.__LINE__.'] because cannot include "module.audio-video.riff.php"');
+									break;
+								}
 
 								$parsed = getid3_riff::parseWAVEFORMATex($trackarray['CodecPrivate']);
 								foreach ($parsed as $key => $value) {
@@ -501,6 +515,7 @@ class getid3_matroska extends getid3_handler
 			switch ($top_element['id']) {
 
 				case EBML_ID_EBML:
+					$info['fileformat'] = 'matroska';
 					$info['matroska']['header']['offset'] = $top_element['offset'];
 					$info['matroska']['header']['length'] = $top_element['length'];
 
@@ -519,7 +534,6 @@ class getid3_matroska extends getid3_handler
 							case EBML_ID_DOCTYPE:
 								$element_data['data'] = getid3_lib::trimNullByte($element_data['data']);
 								$info['matroska']['doctype'] = $element_data['data'];
-								$info['fileformat'] = $element_data['data'];
 								break;
 
 							default:
@@ -1512,8 +1526,8 @@ class getid3_matroska extends getid3_handler
 			$CodecIDlist['V_MPEG4/ISO/AVC']  = 'h264';
 			$CodecIDlist['V_MPEG4/ISO/SP']   = 'mpeg4';
 			$CodecIDlist['V_VP8']            = 'vp8';
-			$CodecIDlist['V_MS/VFW/FOURCC']  = 'vcm'; // Microsoft (TM) Video Codec Manager (VCM)
-			$CodecIDlist['A_MS/ACM']         = 'acm'; // Microsoft (TM) Audio Codec Manager (ACM)
+			$CodecIDlist['V_MS/VFW/FOURCC']  = 'riff';
+			$CodecIDlist['A_MS/ACM']         = 'riff';
 		}
 		return (isset($CodecIDlist[$codecid]) ? $CodecIDlist[$codecid] : $codecid);
 	}

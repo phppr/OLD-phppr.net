@@ -10,17 +10,17 @@ class WP_Feed_Cache extends SimplePie_Cache {
 	 * @static
 	 * @access public
 	 */
-	public function create($location, $filename, $extension) {
+	function create($location, $filename, $extension) {
 		return new WP_Feed_Cache_Transient($location, $filename, $extension);
 	}
 }
 
 class WP_Feed_Cache_Transient {
-	public $name;
-	public $mod_name;
-	public $lifetime = 43200; //Default lifetime in cache of 12 hours
+	var $name;
+	var $mod_name;
+	var $lifetime = 43200; //Default lifetime in cache of 12 hours
 
-	public function __construct($location, $filename, $extension) {
+	function __construct($location, $filename, $extension) {
 		$this->name = 'feed_' . $filename;
 		$this->mod_name = 'feed_mod_' . $filename;
 
@@ -36,29 +36,28 @@ class WP_Feed_Cache_Transient {
 		$this->lifetime = apply_filters( 'wp_feed_cache_transient_lifetime', $lifetime, $filename);
 	}
 
-	public function save($data) {
-		if ( $data instanceof SimplePie ) {
+	function save($data) {
+		if ( is_a($data, 'SimplePie') )
 			$data = $data->data;
-		}
 
 		set_transient($this->name, $data, $this->lifetime);
 		set_transient($this->mod_name, time(), $this->lifetime);
 		return true;
 	}
 
-	public function load() {
+	function load() {
 		return get_transient($this->name);
 	}
 
-	public function mtime() {
+	function mtime() {
 		return get_transient($this->mod_name);
 	}
 
-	public function touch() {
+	function touch() {
 		return set_transient($this->mod_name, time(), $this->lifetime);
 	}
 
-	public function unlink() {
+	function unlink() {
 		delete_transient($this->name);
 		delete_transient($this->mod_name);
 		return true;
@@ -67,7 +66,7 @@ class WP_Feed_Cache_Transient {
 
 class WP_SimplePie_File extends SimplePie_File {
 
-	public function __construct($url, $timeout = 10, $redirects = 5, $headers = null, $useragent = null, $force_fsockopen = false) {
+	function __construct($url, $timeout = 10, $redirects = 5, $headers = null, $useragent = null, $force_fsockopen = false) {
 		$this->url = $url;
 		$this->timeout = $timeout;
 		$this->redirects = $redirects;

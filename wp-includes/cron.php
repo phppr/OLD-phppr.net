@@ -13,18 +13,17 @@
  * WordPress site, if the schedule time has passed.
  *
  * @since 2.1.0
- * @link https://codex.wordpress.org/Function_Reference/wp_schedule_single_event
+ * @link http://codex.wordpress.org/Function_Reference/wp_schedule_single_event
  *
  * @param int $timestamp Timestamp for when to run the event.
  * @param string $hook Action hook to execute when cron is run.
  * @param array $args Optional. Arguments to pass to the hook's callback function.
  */
 function wp_schedule_single_event( $timestamp, $hook, $args = array()) {
-	// don't schedule a duplicate if there's already an identical event due within 10 minutes of it
+	// don't schedule a duplicate if there's already an identical event due in the next 10 minutes
 	$next = wp_next_scheduled($hook, $args);
-	if ( $next && abs( $next - $timestamp ) <= 10 * MINUTE_IN_SECONDS ) {
+	if ( $next && $next <= $timestamp + 10 * MINUTE_IN_SECONDS )
 		return;
-	}
 
 	$crons = _get_cron_array();
 	$event = (object) array( 'hook' => $hook, 'timestamp' => $timestamp, 'schedule' => false, 'args' => $args );
@@ -66,7 +65,7 @@ function wp_schedule_single_event( $timestamp, $hook, $args = array()) {
  * @param string $recurrence How often the event should recur.
  * @param string $hook Action hook to execute when cron is run.
  * @param array $args Optional. Arguments to pass to the hook's callback function.
- * @return false|null False on failure, null when complete with scheduling event.
+ * @return bool|null False on failure, null when complete with scheduling event.
  */
 function wp_schedule_event( $timestamp, $recurrence, $hook, $args = array()) {
 	$crons = _get_cron_array();
@@ -99,34 +98,30 @@ function wp_schedule_event( $timestamp, $recurrence, $hook, $args = array()) {
  * @param string $recurrence How often the event should recur.
  * @param string $hook Action hook to execute when cron is run.
  * @param array $args Optional. Arguments to pass to the hook's callback function.
- * @return false|null False on failure. Null when event is rescheduled.
+ * @return bool|null False on failure. Null when event is rescheduled.
  */
-function wp_reschedule_event( $timestamp, $recurrence, $hook, $args = array() ) {
+function wp_reschedule_event( $timestamp, $recurrence, $hook, $args = array()) {
 	$crons = _get_cron_array();
 	$schedules = wp_get_schedules();
-	$key = md5( serialize( $args ) );
+	$key = md5(serialize($args));
 	$interval = 0;
 
 	// First we try to get it from the schedule
-	if ( isset( $schedules[ $recurrence ] ) ) {
-		$interval = $schedules[ $recurrence ]['interval'];
-	}
+	if ( 0 == $interval )
+		$interval = $schedules[$recurrence]['interval'];
 	// Now we try to get it from the saved interval in case the schedule disappears
-	if ( 0 == $interval ) {
-		$interval = $crons[ $timestamp ][ $hook ][ $key ]['interval'];
-	}
+	if ( 0 == $interval )
+		$interval = $crons[$timestamp][$hook][$key]['interval'];
 	// Now we assume something is wrong and fail to schedule
-	if ( 0 == $interval ) {
+	if ( 0 == $interval )
 		return false;
-	}
 
 	$now = time();
 
-	if ( $timestamp >= $now ) {
+	if ( $timestamp >= $now )
 		$timestamp = $now + $interval;
-	} else {
-		$timestamp = $now + ( $interval - ( ( $now - $timestamp ) % $interval ) );
-	}
+	else
+		$timestamp = $now + ($interval - (($now - $timestamp) % $interval));
 
 	wp_schedule_event( $timestamp, $recurrence, $hook, $args );
 }
@@ -246,10 +241,9 @@ function spawn_cron( $gmt_time = 0 ) {
 	if ( isset($keys[0]) && $keys[0] > $gmt_time )
 		return;
 
-	if ( defined( 'ALTERNATE_WP_CRON' ) && ALTERNATE_WP_CRON ) {
-		if ( ! empty( $_POST ) || defined( 'DOING_AJAX' ) ||  defined( 'XMLRPC_REQUEST' ) ) {
+	if ( defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON ) {
+		if ( !empty($_POST) || defined('DOING_AJAX') )
 			return;
-		}
 
 		$doing_wp_cron = sprintf( '%.22F', $gmt_time );
 		set_transient( 'doing_cron', $doing_wp_cron );
@@ -284,7 +278,7 @@ function spawn_cron( $gmt_time = 0 ) {
 	 *
 	 *         @type int  $timeout   The request timeout in seconds. Default .01 seconds.
 	 *         @type bool $blocking  Whether to set blocking for the request. Default false.
-	 *         @type bool $sslverify Whether SSL should be verified for the request. Default false.
+	 *         @type bool $sslverify Whether to sslverify. Default true.
 	 *     }
 	 * }
 	 */
@@ -295,7 +289,7 @@ function spawn_cron( $gmt_time = 0 ) {
 			'timeout'   => 0.01,
 			'blocking'  => false,
 			/** This filter is documented in wp-includes/class-http.php */
-			'sslverify' => apply_filters( 'https_local_ssl_verify', false )
+			'sslverify' => apply_filters( 'https_local_ssl_verify', true )
 		)
 	) );
 
@@ -349,17 +343,17 @@ function wp_cron() {
  * 60*60*24*7 or 604800. The value of 'interval' would then be 604800.
  *
  * The 'display' is the description. For the 'weekly' key, the 'display' would
- * be `__( 'Once Weekly' )`.
+ * be <code>__('Once Weekly')</code>.
  *
  * For your plugin, you will be passed an array. you can easily add your
  * schedule by doing the following.
- *
- *     // Filter parameter variable name is 'array'.
- *     $array['weekly'] = array(
- *         'interval' => 604800,
- *     	   'display'  => __( 'Once Weekly' )
- *     );
- *
+ * <code>
+ * // filter parameter variable name is 'array'
+ *	$array['weekly'] = array(
+ *		'interval' => 604800,
+ *		'display' => __('Once Weekly')
+ *	);
+ * </code>
  *
  * @since 2.1.0
  *
