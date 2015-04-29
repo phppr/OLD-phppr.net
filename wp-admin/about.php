@@ -9,14 +9,16 @@
 /** WordPress Administration Bootstrap */
 require_once( dirname( __FILE__ ) . '/admin.php' );
 
+wp_enqueue_style( 'wp-mediaelement' );
+wp_enqueue_script( 'wp-mediaelement' );
+wp_localize_script( 'mediaelement', '_wpmejsSettings', array(
+	'pluginPath' => includes_url( 'js/mediaelement/', 'relative' ),
+	'pauseOtherPlayers' => ''
+) );
+
 $title = __( 'About' );
 
 list( $display_version ) = explode( '-', $wp_version );
-
-// Temporary 3.8 hack: We want to use user-profile for the color schemes but don't need the heavy zxcvbn.
-wp_deregister_script( 'zxcvbn-async' );
-wp_register_script( 'zxcvbn-async', false );
-wp_enqueue_script( 'user-profile' );
 
 include( ABSPATH . 'wp-admin/admin-header.php' );
 ?>
@@ -24,7 +26,7 @@ include( ABSPATH . 'wp-admin/admin-header.php' );
 
 <h1><?php printf( __( 'Welcome to WordPress&nbsp;%s' ), $display_version ); ?></h1>
 
-<div class="about-text"><?php printf( __( 'Thank you for updating to WordPress %s, the most beautiful WordPress&nbsp;yet.' ), $display_version ); ?></div>
+<div class="about-text"><?php printf( __( 'Thank you for updating! WordPress %s helps you communicate and share, globally.' ), $display_version ); ?></div>
 
 <div class="wp-badge"><?php printf( __( 'Version %s' ), $display_version ); ?></div>
 
@@ -39,120 +41,106 @@ include( ABSPATH . 'wp-admin/admin-header.php' );
 </h2>
 
 <div class="changelog point-releases">
-	<h3><?php echo _n( 'Maintenance and Security Release', 'Maintenance and Security Releases', 2 ); ?></h3>
-	<p><?php printf( _n( '<strong>Version %1$s</strong> addressed some security issues and fixed %2$s bug.',
-         '<strong>Version %1$s</strong> addressed some security issues and fixed %2$s bugs.', 9 ), '3.8.2', number_format_i18n( 9 ) ); ?>
-		<?php printf( __( 'For more information, see <a href="%s">the release notes</a>.' ), 'http://codex.wordpress.org/Version_3.8.2' ); ?>
- 	</p>
-	<p><?php printf( _n( '<strong>Version %1$s</strong> addressed %2$s bug.',
-		'<strong>Version %1$s</strong> addressed %2$s bugs.', 31 ), '3.8.1', number_format_i18n( 31 ) ); ?>
-		<?php printf( __( 'For more information, see <a href="%s">the release notes</a>.' ), 'http://codex.wordpress.org/Version_3.8.1' ); ?>
+	<h3><?php echo _n( 'Security Release', 'Security Releases', 1 ); ?></h3>
+	<p><?php printf( _n( '<strong>Version %1$s</strong> addressed a security issue.',
+         '<strong>Version %1$s</strong> addressed some security issues.', 1 ), '4.2.1' ); ?>
+		<?php printf( __( 'For more information, see <a href="%s">the release notes</a>.' ), 'http://codex.wordpress.org/Version_4.2.1' ); ?>
  	</p>
 </div>
 
-<div class="changelog">
-	<h2 class="about-headline-callout"><?php _e( 'Introducing a modern new&nbsp;design' ); ?></h2>
-	<img class="about-overview-img" src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/overview.png?1" />
-	<div class="feature-section col three-col about-updates">
-		<div class="col-1">
-			<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/aesthetics.png?1" />
-			<h3><?php _e( 'Modern aesthetic' ); ?></h3>
-			<p><?php _e( 'The new WordPress dashboard has a fresh, uncluttered design that embraces clarity and simplicity.' ); ?></p>
-		</div>
-		<div class="col-2">
-			<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/typography.png?1" />
-			<h3><?php _e( 'Clean typography' ); ?></h3>
-			<p><?php _e( 'The Open Sans typeface provides simple, friendly text that is optimized for both desktop and mobile viewing. It&#8217;s even open source, just like WordPress.' ); ?></p>
-		</div>
-		<div class="col-3 last-feature">
-			<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/contrast.png?1" />
-			<h3><?php _e( 'Refined contrast' ); ?></h3>
-			<p><?php _e( 'We think beautiful design should never sacrifice legibility. With superior contrast and large, comfortable type, the new design is easy to read and a pleasure to navigate.' ); ?></p>
-		</div>
+<div class="headline-feature feature-video">
+	<embed type="application/x-shockwave-flash" src="https://v0.wordpress.com/player.swf?v=1.04" width="1000" height="560" wmode="direct" seamlesstabbing="true" allowfullscreen="true" allowscriptaccess="always" overstretch="true" flashvars="guid=e9kH4FzP&amp;isDynamicSeeking=true"></embed>
+</div>
+
+<hr />
+
+<div class="feature-section two-col">
+	<div class="col">
+		<h3><?php _e( 'An easier way to share content' ); ?></h3>
+		<p><?php printf( __( 'Clip it, edit it, publish it. Get familiar with the new and improved Press This. From the <a href="%s">Tools</a> menu, add Press This to your browser bookmark bar or your mobile device home screen. Once installed you can share your content with lightning speed. Sharing your favorite videos, images, and content has never been this fast or this easy.' ), admin_url( 'tools.php' ) ); ?></p>
+		<p><?php _e( 'Drag the bookmarklet below to your bookmarks bar. Then, when you&#8217;re on a page you want to share, simply &#8220;press&#8221; it.' ); ?></p>
+
+		<p class="pressthis-bookmarklet-demo">
+			<a class="pressthis-bookmarklet" onclick="return false;" href="<?php echo htmlspecialchars( get_shortcut_link() ); ?>"><span><?php _e( 'Press This' ); ?></span></a>
+		</p>
+	</div>
+
+	<div class="col">
+		<img src="//s.w.org/images/core/4.2/press-this.jpg" />
 	</div>
 </div>
 
-<hr>
+<div class="feature-section two-col">
+	<div class="col">
+		<img src="//s.w.org/images/core/4.2/unicode.png" />
+	</div>
+	<div class="col">
+		<h3><?php _e( 'Extended character support' ); ?></h3>
+		<p><?php _e( 'Writing in WordPress, whatever your language, just got better. WordPress 4.2 supports a host of new characters out-of-the-box, including native Chinese, Japanese, and Korean characters, musical and mathematical symbols, and hieroglyphs.' ); ?></p>
+		<p><?php
+			/* translators: 1: heart emoji, 2: frog face emoji, 3, monkey emoji, 4: pizza emoji, 5: Emoji Codex link */
+			printf( __( 'Don&#8217;t use any of those characters? You can still have fun &mdash; emoji are now available in WordPress! Get creative and decorate your content with %1$s, %2$s, %3$s, %4$s, and all the many other <a href="%5$s">emoji</a>.' ), '&#x1F499', '&#x1F438', '&#x1F412', '&#x1F355', __( 'https://codex.wordpress.org/Emoji' ) );
+		?></p>
+	</div>
+</div>
 
-<div class="changelog">
+<div class="changelog feature-section three-col">
+	<div>
+		<img src="//s.w.org/images/core/4.2/theme-switcher.png" />
+		<h3><?php _e( 'Switch themes in the Customizer' ); ?></h3>
+		<p><?php _e( 'Browse and preview your installed themes from the Customizer. Make sure the theme looks great with <em>your</em> content, before it debuts on your site. ' ); ?></p>
+	</div>
+	<div>
+		<img src="//s.w.org/images/core/4.2/embeds.png" />
+		<h3><?php _e( 'Even more embeds' ); ?></h3>
+		<p><?php _e( 'Paste links from Tumblr.com and Kickstarter and watch them magically appear right in the editor. With every release, your publishing and editing experience get closer together.' ); ?></p>
+	</div>
+	<div class="last-feature">
+		<img src="//s.w.org/images/core/4.2/plugins.png" />
+		<h3><?php _e( 'Streamlined plugin updates' ); ?></h3>
+		<p><?php _e( 'Goodbye boring loading screen, hello smooth and simple plugin updates. Click <em>Update&nbsp;Now</em> and watch the magic happen.' ); ?></p>
+	</div>
+</div>
+
+<div class="changelog under-the-hood feature-list">
+	<h3><?php _e( 'Under the Hood' ); ?></h3>
+
 	<div class="feature-section col two-col">
 		<div>
-			<h3><?php _e( 'WordPress on every&nbsp;device' ); ?></h3>
-			<p><?php _e( 'We all access the internet in different ways. Smartphone, tablet, notebook, desktop &mdash; no matter what you use, WordPress will adapt and you&#8217;ll feel right at home.' ); ?></p>
-			<h4><?php _e( 'High definition at high&nbsp;speed' ); ?></h4>
-			<p><?php _e( 'WordPress is sharper than ever with new vector-based icons that scale to your screen. By ditching pixels, pages load significantly faster, too.' ); ?></p>
+			<h4><?php _e( 'utf8mb4 support' ); ?></h4>
+			<p><?php _e( 'Database character encoding has changed from utf8 to utf8mb4, which adds support for a whole range of new 4-byte characters.' ); ?></p>
+
+			<h4><?php _e( 'JavaScript accessibility' ); ?></h4>
+			<p><?php
+				/* translators: %s wp.a11y.speak() */
+				printf( __( 'You can now send audible notifications to screen readers in JavaScript with %s. Pass it a string, and an update will be sent to a dedicated ARIA live notifications area.' ), '<code>wp.a11y.speak()</code>' );
+			?></p>
 		</div>
-		<div class="last-feature about-colors-img">
-			<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/colors.png?1" />
+		<div class="last-feature">
+			<h4><?php _e( 'Shared term splitting' ); ?></h4>
+			<p><?php
+				/* translators: 1: Term splitting guide link */
+				printf( __( 'Terms shared across multiple taxonomies will be split when one of them is updated. Find out more in the <a href="%1$s">Plugin Developer Handbook</a>.' ), 'https://developer.wordpress.org/plugins/taxonomy/working-with-split-terms-in-wp-4-2/' );
+			?></p>
+
+			<h4><?php _e( 'Complex query ordering' ); ?></h4>
+			<p><?php
+				/* translators: 1: WP_Query, 2: WP_Comment_Query, 3: WP_User_Query */
+				printf( __( '%1$s, %2$s, and %3$s now support complex ordering with named meta query clauses.' ), '<code>WP_Query</code>', '<code>WP_Comment_Query</code>', '<code>WP_User_Query</code>' );
+			?></p>
 		</div>
+
+	<hr />
+
+	<div class="return-to-dashboard">
+		<?php if ( current_user_can( 'update_core' ) && isset( $_GET['updated'] ) ) : ?>
+		<a href="<?php echo esc_url( self_admin_url( 'update-core.php' ) ); ?>"><?php
+			is_multisite() ? _e( 'Return to Updates' ) : _e( 'Return to Dashboard &rarr; Updates' );
+		?></a> |
+		<?php endif; ?>
+		<a href="<?php echo esc_url( self_admin_url() ); ?>"><?php
+			is_blog_admin() ? _e( 'Go to Dashboard &rarr; Home' ) : _e( 'Go to Dashboard' ); ?></a>
 	</div>
-</div>
-
-<hr>
-
-<?php
-global $_wp_admin_css_colors;
-$new_colors = array( 'fresh', 'light', 'blue', 'midnight', 'sunrise', 'ectoplasm', 'ocean', 'coffee' );
-$_wp_admin_css_colors = array_intersect_key( $_wp_admin_css_colors, array_fill_keys( $new_colors, true ) );
-
-if ( count( $_wp_admin_css_colors ) > 1 && has_action( 'admin_color_scheme_picker' ) ) : ?>
-<div class="changelog about-colors">
-	<div class="feature-section col one-col">
-		<div>
-			<h3><?php _e( 'Pick a color' ); ?></h3>
-			<p><?php _e( 'We&#8217;ve included eight color schemes so you can pick your favorite. Choose from any of them below to change it instantly.' ); ?>
-				<?php
-				/** This action is documented in wp-admin/user-edit.php */
-				do_action( 'admin_color_scheme_picker' );
-				?>
-			<p><?php printf( __( 'To change your color scheme later, just <a href="%1$s">visit your profile</a>.' ), get_edit_profile_url( get_current_user_id() ) ); ?></p>
-		</div>
-	</div>
-</div>
-
-<hr>
-<?php endif; ?>
-
-<div class="changelog">
-	<div class="feature-section col two-col">
-		<div>
-			<h3><?php _e( 'Refined theme management' ); ?></h3>
-			<p><?php _e( 'The new themes screen lets you survey your themes at a glance. Or want more information? Click to discover more. Then sit back and use your keyboard&#8217;s navigation arrows to flip through every theme you&#8217;ve got.' ); ?></p>
-			<h4><?php _e( 'Smoother widget experience' ); ?></h4>
-			<p><?php _e( 'Drag-drag-drag. Scroll-scroll-scroll. Widget management can be complicated. With the new design, we&#8217;ve worked to streamline the widgets&nbsp;screen.' ); ?></p>
-			<p><?php _e( 'Have a large monitor? Multiple widget areas stack side-by-side to use the available space. Using a tablet? Just tap a widget to add it.' ); ?></p>
-		</div>
-		<div class="last-feature about-themes-img">
-			<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/themes.png?1" />
-		</div>
-	</div>
-</div>
-
-<hr>
-
-<div class="changelog about-twentyfourteen">
-	<h2 class="about-headline-callout"><?php _e( 'Twenty Fourteen, a sleek new magazine&nbsp;theme' ); ?></h2>
-	<img src="<?php echo is_ssl() ? 'https://' : '//s.'; ?>wordpress.org/images/core/3.8/twentyfourteen.jpg?1" />
-
-	<div class="feature-section col one-col center-col">
-		<div>
-			<h3><?php _e( 'Turn your blog into a&nbsp;magazine' ); ?></h3>
-			<p><?php _e( 'Create a beautiful magazine-style site with WordPress and Twenty Fourteen. Choose a grid or a slider to display featured content on your homepage. Customize your site with three widget areas or change your layout with two page templates.' ); ?></p>
-			<p><?php _e( 'With a striking design that does not compromise our trademark simplicity, Twenty Fourteen is our most intrepid default theme yet.' ); ?></p>
-		</div>
-	</div>
-</div>
-
-<hr>
-
-<div class="return-to-dashboard">
-	<?php if ( current_user_can( 'update_core' ) && isset( $_GET['updated'] ) ) : ?>
-	<a href="<?php echo esc_url( self_admin_url( 'update-core.php' ) ); ?>"><?php
-		is_multisite() ? _e( 'Return to Updates' ) : _e( 'Return to Dashboard &rarr; Updates' );
-	?></a> |
-	<?php endif; ?>
-	<a href="<?php echo esc_url( self_admin_url() ); ?>"><?php
-		is_blog_admin() ? _e( 'Go to Dashboard &rarr; Home' ) : _e( 'Go to Dashboard' ); ?></a>
 </div>
 
 </div>
