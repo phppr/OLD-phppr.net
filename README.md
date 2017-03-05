@@ -1,3 +1,5 @@
+> :warning: Projeto muito antigo e depreciado!
+
 phppr.net
 ==============
 
